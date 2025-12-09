@@ -71,8 +71,8 @@ const useStyles = makeStyles({
     position: "relative"
   },
   diagramWrapExpanded: {
-    height: "calc(100vh - 120px)",
-    minHeight: "80vh"
+    height: "calc(100vh - 40px)",
+    minHeight: "95vh"
   },
   diagramCard: {
     position: "relative"
@@ -328,7 +328,7 @@ const Diagram = React.forwardRef(
     svgRef
   ) => {
     const width = 900;
-    const height = expanded ? 900 : 360;
+    const height = expanded ? 1100 : 360;
     const centerX = width / 2;
     const centerY = height / 2;
     const radius = 200;
@@ -460,37 +460,37 @@ const Diagram = React.forwardRef(
         </g>
 
         <g
-          transform={`translate(${centerX - 240 / 2}, ${centerY - 110 / 2})`}
+          transform={`translate(${centerX - 280 / 2}, ${centerY - 140 / 2})`}
           filter="url(#shadow)"
         >
           <rect
-            width={240}
-            height={110}
-            rx="14"
+            width={280}
+            height={140}
+            rx="16"
             fill={tokens.colorNeutralBackground1}
             stroke={tokens.colorNeutralStroke2}
           />
-          <circle
-            cx={38}
-            cy={110 / 2}
-            r={24}
-            fill="url(#roleGradient)"
-            stroke={tokens.colorNeutralBackground1}
-            strokeWidth="2"
-          />
-          <text x={38} y={110 / 2 + 5} textAnchor="middle" fontSize="13" fill="white" fontWeight="700">
+        <circle
+          cx={38}
+          cy={140 / 2}
+          r={28}
+          fill={tokens.colorBrandBackground}
+          stroke={tokens.colorNeutralBackground1}
+          strokeWidth="2"
+        />
+          <text x={38} y={140 / 2 + 6} textAnchor="middle" fontSize="14" fill="white" fontWeight="700">
             {initials(roleName || "Role")}
           </text>
           <text
-            x={240 / 2}
-            y={110 / 2}
-            fontSize="13"
+            x={280 / 2}
+            y={140 / 2}
+            fontSize="18"
             fill={tokens.colorNeutralForeground1}
             fontWeight="700"
             textAnchor="middle"
             dominantBaseline="middle"
           >
-            {truncate(roleName || "Role", 20)}
+            {truncate(roleName || "Role", 26)}
           </text>
         </g>
 
@@ -509,14 +509,14 @@ const Diagram = React.forwardRef(
                 fill={tokens.colorNeutralBackground1}
                 stroke={tokens.colorNeutralStroke2}
               />
-              <circle
-                cx={30}
-                cy={nodeHeight / 2}
-                r={20}
-                fill={stringToHslColor(node.name)}
-                stroke={tokens.colorNeutralBackground1}
-                strokeWidth="2"
-              />
+            <circle
+              cx={30}
+              cy={nodeHeight / 2}
+              r={20}
+              fill={tokens.colorPaletteBlueBorderActive}
+              stroke={tokens.colorNeutralBackground1}
+              strokeWidth="2"
+            />
               <text x={30} y={nodeHeight / 2 + 4} textAnchor="middle" fontSize="12" fill="white" fontWeight="700">
                 {initials(node.name)}
               </text>
