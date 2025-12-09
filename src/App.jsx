@@ -209,15 +209,26 @@ const CollaboratorCard = ({
   styles,
   onRemove,
   onAddTask,
-  onRemoveTask
+  onRemoveTask,
+  toolsOptions,
+  onAddTool,
+  onRemoveTool
 }) => {
   const [taskValue, setTaskValue] = useState("");
+  const [toolValue, setToolValue] = useState("");
 
   const addTask = () => {
     const trimmed = taskValue.trim();
     if (!trimmed) return;
     onAddTask(trimmed);
     setTaskValue("");
+  };
+
+  const addTool = (value) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    onAddTool(trimmed);
+    setToolValue("");
   };
 
   return (
@@ -256,6 +267,42 @@ const CollaboratorCard = ({
         {collaborator.tasks.map((task, idx) => (
           <Tag key={`${task}-${idx}`} dismissible onDismiss={() => onRemoveTask(idx)} shape="rounded">
             {task}
+          </Tag>
+        ))}
+      </TagGroup>
+
+      <Field label="Tools this collaborator uses">
+        <div style={{ display: "flex", gap: tokens.spacingHorizontalXS }}>
+          <Combobox
+            freeform
+            placeholder="Select or type a tool"
+            value={toolValue}
+            onOptionSelect={(_, data) => addTool(data.optionValue || data.value || "")}
+            onChange={(_, data) => setToolValue(data.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addTool(toolValue);
+              }
+            }}
+            style={{ minWidth: "200px" }}
+          >
+            {toolsOptions.map((tool) => (
+              <Option key={tool} value={tool}>
+                {tool}
+              </Option>
+            ))}
+          </Combobox>
+          <Button icon={<Add16Regular />} onClick={() => addTool(toolValue)}>
+            Add
+          </Button>
+        </div>
+      </Field>
+      <TagGroup aria-label="Collaborator tools" style={{ marginTop: tokens.spacingVerticalXS }}>
+        {collaborator.tools?.length === 0 && <Text className={styles.muted}>No tools yet.</Text>}
+        {(collaborator.tools || []).map((tool, idx) => (
+          <Tag key={`${tool}-${idx}`} dismissible onDismiss={() => onRemoveTool(idx)} shape="rounded" appearance="outline">
+            {tool}
           </Tag>
         ))}
       </TagGroup>
@@ -299,7 +346,7 @@ const Diagram = React.forwardRef(
         const y = centerY + radius * Math.sin(angle);
         const key = `collab-${collab.name}`;
         const override = nodePositions[key];
-        return { ...collab, x: override?.x ?? x, y: override?.y ?? y, key };
+        return { ...collab, tools: collab.tools || [], x: override?.x ?? x, y: override?.y ?? y, key };
       });
     }, [collaborators, nodePositions]);
 
@@ -374,32 +421,38 @@ const Diagram = React.forwardRef(
         <rect x="0" y="0" width={width} height={height} fill="url(#bg)" rx="18" />
 
         <g>
-          {nodes.map((node, idx) => {
-            const midX = (centerX + node.x) / 2;
-            const midY = (centerY + node.y) / 2;
-            const angle = Math.atan2(node.y - centerY, node.x - centerX);
-            const curveOffset = 30;
-            const ctrlX = midX + curveOffset * Math.cos(angle + Math.PI / 2);
-            const ctrlY = midY + curveOffset * Math.sin(angle + Math.PI / 2);
-            const sharedLabel = (node.tasks.filter((t) => (sharedTasksMap[t]?.length || 0) > 1).join(" • ")) || "";
-            return (
-              <g key={`conn-${node.name}-${idx}`}>
-                <path
-                  d={`M ${centerX} ${centerY} Q ${ctrlX} ${ctrlY} ${node.x} ${node.y}`}
-                  fill="none"
-                  stroke={tokens.colorNeutralStroke2}
-                  strokeWidth="2.5"
-                  strokeDasharray="6 4"
-                  opacity="0.35"
-                />
-                {sharedLabel ? (
-                  <text x={midX} y={midY - 6} textAnchor="middle" fontSize="10" fill={tokens.colorNeutralForeground2}>
-                    {truncate(sharedLabel, 22)}
-                  </text>
-                ) : null}
-              </g>
-            );
-          })}
+      {nodes.map((node, idx) => {
+        const midX = (centerX + node.x) / 2;
+        const midY = (centerY + node.y) / 2;
+        const angle = Math.atan2(node.y - centerY, node.x - centerX);
+        const curveOffset = 30;
+        const ctrlX = midX + curveOffset * Math.cos(angle + Math.PI / 2);
+        const ctrlY = midY + curveOffset * Math.sin(angle + Math.PI / 2);
+        const sharedLabel = (node.tasks.filter((t) => (sharedTasksMap[t]?.length || 0) > 1).join(" • ")) || "";
+        const sharedTools = (node.tools || []).filter((t) => (sharedTasksMap[t]?.length || 0) > 1);
+        return (
+          <g key={`conn-${node.name}-${idx}`}>
+            <path
+              d={`M ${centerX} ${centerY} Q ${ctrlX} ${ctrlY} ${node.x} ${node.y}`}
+              fill="none"
+              stroke={tokens.colorNeutralStroke2}
+              strokeWidth="2.5"
+              strokeDasharray="6 4"
+              opacity="0.35"
+            />
+            {sharedLabel ? (
+              <text x={midX} y={midY - 8} textAnchor="middle" fontSize="10" fill={tokens.colorNeutralForeground2}>
+                {truncate(sharedLabel, 22)}
+              </text>
+            ) : null}
+            {sharedTools.length ? (
+              <text x={midX} y={midY + 8} textAnchor="middle" fontSize="10" fill={tokens.colorNeutralForeground2}>
+                {truncate(`Tools: ${sharedTools.join(", ")}`, 22)}
+              </text>
+            ) : null}
+          </g>
+        );
+      })}
         </g>
 
         <g
@@ -532,10 +585,26 @@ const App = () => {
     setCollaborators(collaborators.map((c, i) => (i === idx ? { ...c, tasks: [...c.tasks, task] } : c)));
   };
 
+  const addToolToCollaborator = (idx, tool) => {
+    setCollaborators(collaborators.map((c, i) => {
+      if (i !== idx) return c;
+      if (c.tools?.includes(tool)) return c;
+      return { ...c, tools: [...(c.tools || []), tool] };
+    }));
+    if (!tools.includes(tool)) setTools([...tools, tool]);
+  };
+
   const removeTaskFromCollaborator = (collabIdx, taskIdx) => {
     setCollaborators(collaborators.map((c, i) => {
       if (i !== collabIdx) return c;
       return { ...c, tasks: c.tasks.filter((_, tIdx) => tIdx !== taskIdx) };
+    }));
+  };
+
+  const removeToolFromCollaborator = (collabIdx, toolIdx) => {
+    setCollaborators(collaborators.map((c, i) => {
+      if (i !== collabIdx) return c;
+      return { ...c, tools: (c.tools || []).filter((_, tIdx) => tIdx !== toolIdx) };
     }));
   };
 
@@ -701,9 +770,12 @@ const App = () => {
                     key={collab.name + idx}
                     collaborator={collab}
                     styles={styles}
+                    toolsOptions={tools}
                     onRemove={() => removeCollaborator(idx)}
                     onAddTask={(task) => addTaskToCollaborator(idx, task)}
                     onRemoveTask={(taskIdx) => removeTaskFromCollaborator(idx, taskIdx)}
+                    onAddTool={(tool) => addToolToCollaborator(idx, tool)}
+                    onRemoveTool={(toolIdx) => removeToolFromCollaborator(idx, toolIdx)}
                   />
                 ))}
               </div>
