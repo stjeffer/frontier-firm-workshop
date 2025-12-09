@@ -70,6 +70,10 @@ const useStyles = makeStyles({
     height: "360px",
     position: "relative"
   },
+  diagramWrapExpanded: {
+    height: "calc(100vh - 120px)",
+    minHeight: "80vh"
+  },
   diagramCard: {
     position: "relative"
   },
@@ -324,7 +328,7 @@ const Diagram = React.forwardRef(
     svgRef
   ) => {
     const width = 900;
-    const height = expanded ? 640 : 420;
+    const height = expanded ? 900 : 360;
     const centerX = width / 2;
     const centerY = height / 2;
     const radius = 200;
@@ -699,9 +703,6 @@ const App = () => {
   return (
     <FluentProvider theme={webLightTheme}>
       <div className={styles.shell}>
-        <header className={styles.header}>
-        </header>
-
         <div className={styles.grid}>
           <Card>
             <CardHeader
@@ -788,7 +789,7 @@ const App = () => {
               header={<Subtitle2>Collaboration Map</Subtitle2>}
               description={<Text className={styles.muted}>Visio-style visualization of the role and collaborator links with shared tasks.</Text>}
             />
-            <div className={`${styles.diagramWrap} ${diagramExpanded ? styles.diagramExpanded : ""}`}>
+            <div className={`${styles.diagramWrap} ${diagramExpanded ? `${styles.diagramExpanded} ${styles.diagramWrapExpanded}` : ""}`}>
               <div className={styles.overlayFooter}>
                 <Switch checked={diagramExpanded} onChange={(_, data) => setDiagramExpanded(data.checked)} label="Expand to full screen" />
                 {diagramExpanded && (
