@@ -325,13 +325,18 @@ const Diagram = React.forwardRef(
     },
     svgRef
   ) => {
+    const scale = expanded ? 1.25 : 1;
     const width = 900;
     const height = expanded ? 1100 : 360;
     const centerX = width / 2;
     const centerY = height / 2;
-    const radius = 210;
-    const nodeWidth = 300;
-    const nodeHeight = 110;
+    const radius = 210 * scale;
+    const nodeWidth = 240 * scale;
+    const nodeHeight = 110 * scale;
+    const roleWidth = (expanded ? 320 : 280);
+    const roleHeight = (expanded ? 170 : 140);
+    const roleAvatarR = (expanded ? 32 : 28);
+    const nodeAvatarR = (expanded ? 22 : 20);
 
     const localSvgRef = useRef(null);
     const mergedRef = (node) => {
@@ -458,31 +463,31 @@ const Diagram = React.forwardRef(
         </g>
 
         <g
-          transform={`translate(${centerX - 280 / 2}, ${centerY - 140 / 2})`}
+          transform={`translate(${centerX - roleWidth / 2}, ${centerY - roleHeight / 2})`}
           filter="url(#shadow)"
         >
           <rect
-            width={280}
-            height={140}
+            width={roleWidth}
+            height={roleHeight}
             rx="16"
             fill={tokens.colorNeutralBackground1}
             stroke={tokens.colorNeutralStroke2}
           />
         <circle
           cx={38}
-          cy={140 / 2}
-          r={28}
+          cy={roleHeight / 2}
+          r={roleAvatarR}
           fill={tokens.colorBrandBackground}
           stroke={tokens.colorNeutralBackground1}
           strokeWidth="2"
         />
-        <text x={38} y={140 / 2 + 6} textAnchor="middle" fontSize="14" fill="white" fontWeight="700">
+        <text x={38} y={roleHeight / 2 + 6} textAnchor="middle" fontSize="14" fill="white" fontWeight="700">
           {initials(roleName || "Role")}
         </text>
         <text
           x={80}
-          y={140 / 2}
-          fontSize="20"
+          y={roleHeight / 2}
+          fontSize={expanded ? "20" : "18"}
           fill={tokens.colorNeutralForeground1}
           fontWeight="700"
           textAnchor="start"
@@ -508,26 +513,26 @@ const Diagram = React.forwardRef(
               stroke={tokens.colorNeutralStroke2}
             />
             <circle
-              cx={28}
+              cx={28 * scale}
               cy={nodeHeight / 2}
-              r={20}
+              r={nodeAvatarR}
               fill={tokens.colorPaletteBlueBorderActive}
               stroke={tokens.colorNeutralBackground1}
               strokeWidth="2"
             />
-            <text x={28} y={nodeHeight / 2 + 4} textAnchor="middle" fontSize="12" fill="white" fontWeight="700">
+            <text x={28 * scale} y={nodeHeight / 2 + 4} textAnchor="middle" fontSize={expanded ? "13" : "12"} fill="white" fontWeight="700">
               {initials(node.name)}
             </text>
             <text
-              x={60}
+              x={60 * scale}
               y={nodeHeight / 2 + 3}
-              fontSize="18"
+              fontSize={expanded ? "17" : "15"}
               fill={tokens.colorNeutralForeground1}
               fontWeight="700"
               textAnchor="start"
               dominantBaseline="middle"
             >
-              {truncate(node.name, 20)}
+             {truncate(node.name, 20)}
             </text>
             </g>
           </g>
