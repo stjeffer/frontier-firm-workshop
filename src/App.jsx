@@ -35,12 +35,7 @@ const useStyles = makeStyles({
     margin: "0 auto",
     display: "flex",
     flexDirection: "column",
-    gap: tokens.spacingVerticalXL
-  },
-  header: {
-    display: "flex",
-    flexDirection: "column",
-    gap: tokens.spacingVerticalS
+    gap: tokens.spacingVerticalL
   },
   titleRow: {
     display: "flex",
@@ -72,7 +67,7 @@ const useStyles = makeStyles({
   diagramWrap: {
     width: "100%",
     maxWidth: "100%",
-    height: "420px",
+    height: "360px",
     position: "relative"
   },
   diagramCard: {
@@ -88,7 +83,7 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorNeutralBackground1,
     boxShadow: tokens.shadow64,
     overflow: "auto",
-    padding: tokens.spacingHorizontalXL
+    padding: tokens.spacingHorizontalL
   },
   overlayFooter: {
     display: "flex",
@@ -705,10 +700,6 @@ const App = () => {
     <FluentProvider theme={webLightTheme}>
       <div className={styles.shell}>
         <header className={styles.header}>
-          <div className={styles.titleRow}>
-            <CalendarClock24Regular aria-label="Day-in-the-Life Mapper" title="Day-in-the-Life Mapper" />
-          </div>
-          <Text className={styles.muted}>Capture a role, collaborators, tools, goals, and pain points with Fluent UI.</Text>
         </header>
 
         <div className={styles.grid}>
