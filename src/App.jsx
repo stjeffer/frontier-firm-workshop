@@ -188,19 +188,17 @@ const AddableList = ({ label, placeholder, items, onAdd, onRemove }) => {
       <div style={{ marginTop: tokens.spacingVerticalS }}>
         <TagGroup aria-label={`${label} list`}>
           {items.length === 0 && <Text className="muted">Nothing added yet.</Text>}
-          <div className={styles.tagWrap}>
-            {items.map((item, idx) => (
-              <Tag
-                key={`${item}-${idx}`}
-                shape="rounded"
-                appearance="brand"
-                dismissible
-                onDismiss={() => onRemove(idx)}
-              >
-                {item}
-              </Tag>
-            ))}
-          </div>
+          {items.map((item, idx) => (
+            <Tag
+              key={`${item}-${idx}`}
+              shape="rounded"
+              appearance="brand"
+              dismissible
+              onDismiss={() => onRemove(idx)}
+            >
+              {item}
+            </Tag>
+          ))}
         </TagGroup>
       </div>
     </div>
@@ -331,9 +329,9 @@ const Diagram = React.forwardRef(
     const height = expanded ? 1100 : 360;
     const centerX = width / 2;
     const centerY = height / 2;
-    const radius = 200;
-    const nodeWidth = 180;
-    const nodeHeight = 96;
+    const radius = 210;
+    const nodeWidth = 300;
+    const nodeHeight = 110;
 
     const localSvgRef = useRef(null);
     const mergedRef = (node) => {
@@ -450,7 +448,7 @@ const Diagram = React.forwardRef(
               </text>
             ) : null}
             {sharedTools.length ? (
-              <text x={midX} y={midY + 8} textAnchor="middle" fontSize="10" fill={tokens.colorNeutralForeground2}>
+              <text x={midX} y={midY + 10} textAnchor="middle" fontSize="10" fill={tokens.colorNeutralForeground2}>
                 {truncate(`Tools: ${sharedTools.join(", ")}`, 22)}
               </text>
             ) : null}
@@ -478,20 +476,20 @@ const Diagram = React.forwardRef(
           stroke={tokens.colorNeutralBackground1}
           strokeWidth="2"
         />
-          <text x={38} y={140 / 2 + 6} textAnchor="middle" fontSize="14" fill="white" fontWeight="700">
-            {initials(roleName || "Role")}
-          </text>
-          <text
-            x={280 / 2}
-            y={140 / 2}
-            fontSize="18"
-            fill={tokens.colorNeutralForeground1}
-            fontWeight="700"
-            textAnchor="middle"
-            dominantBaseline="middle"
-          >
-            {truncate(roleName || "Role", 26)}
-          </text>
+        <text x={38} y={140 / 2 + 6} textAnchor="middle" fontSize="14" fill="white" fontWeight="700">
+          {initials(roleName || "Role")}
+        </text>
+        <text
+          x={80}
+          y={140 / 2}
+          fontSize="20"
+          fill={tokens.colorNeutralForeground1}
+          fontWeight="700"
+          textAnchor="start"
+          dominantBaseline="middle"
+        >
+          {truncate(roleName || "Role", 24)}
+        </text>
         </g>
 
         {nodes.map((node) => (
@@ -503,34 +501,34 @@ const Diagram = React.forwardRef(
               style={{ cursor: "grab" }}
             >
               <rect
-                width={nodeWidth}
-                height={nodeHeight}
-                rx="14"
-                fill={tokens.colorNeutralBackground1}
-                stroke={tokens.colorNeutralStroke2}
-              />
+              width={nodeWidth}
+              height={nodeHeight}
+              rx="14"
+              fill={tokens.colorNeutralBackground1}
+              stroke={tokens.colorNeutralStroke2}
+            />
             <circle
-              cx={30}
+              cx={28}
               cy={nodeHeight / 2}
               r={20}
               fill={tokens.colorPaletteBlueBorderActive}
               stroke={tokens.colorNeutralBackground1}
               strokeWidth="2"
             />
-              <text x={30} y={nodeHeight / 2 + 4} textAnchor="middle" fontSize="12" fill="white" fontWeight="700">
-                {initials(node.name)}
-              </text>
-              <text
-                x={60}
-                y={nodeHeight / 2 + 4}
-                fontSize="13"
-                fill={tokens.colorNeutralForeground1}
-                fontWeight="700"
-                textAnchor="start"
-                dominantBaseline="middle"
-              >
-                {truncate(node.name, 20)}
-              </text>
+            <text x={28} y={nodeHeight / 2 + 4} textAnchor="middle" fontSize="12" fill="white" fontWeight="700">
+              {initials(node.name)}
+            </text>
+            <text
+              x={60}
+              y={nodeHeight / 2 + 3}
+              fontSize="18"
+              fill={tokens.colorNeutralForeground1}
+              fontWeight="700"
+              textAnchor="start"
+              dominantBaseline="middle"
+            >
+              {truncate(node.name, 20)}
+            </text>
             </g>
           </g>
         ))}
