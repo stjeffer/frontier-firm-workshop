@@ -124,6 +124,10 @@ const useStyles = makeStyles({
   },
   painOverlayDragging: {
     cursor: "grabbing"
+  },
+  painOverlayWide: {
+    minWidth: "380px",
+    maxWidth: "520px"
   }
 });
 
@@ -316,6 +320,7 @@ const Diagram = React.forwardRef(
       roleName,
       collaborators,
       sharedTasksMap,
+      sharedToolsMap,
       painPoints,
       nodePositions,
       setNodePositions,
@@ -424,12 +429,12 @@ const Diagram = React.forwardRef(
       {nodes.map((node, idx) => {
         const midX = (centerX + node.x) / 2;
         const midY = (centerY + node.y) / 2;
-        const angle = Math.atan2(node.y - centerY, node.x - centerX);
-        const curveOffset = 30;
-        const ctrlX = midX + curveOffset * Math.cos(angle + Math.PI / 2);
-        const ctrlY = midY + curveOffset * Math.sin(angle + Math.PI / 2);
-        const sharedLabel = (node.tasks.filter((t) => (sharedTasksMap[t]?.length || 0) > 1).join(" • ")) || "";
-        const sharedTools = (node.tools || []).filter((t) => (sharedTasksMap[t]?.length || 0) > 1);
+          const angle = Math.atan2(node.y - centerY, node.x - centerX);
+          const curveOffset = 30;
+          const ctrlX = midX + curveOffset * Math.cos(angle + Math.PI / 2);
+          const ctrlY = midY + curveOffset * Math.sin(angle + Math.PI / 2);
+          const sharedLabel = (node.tasks.filter((t) => (sharedTasksMap[t]?.length || 0) > 1).join(" • ")) || "";
+          const sharedTools = (node.tools || []).filter((t) => (sharedToolsMap?.[t]?.length || 0) > 1);
         return (
           <g key={`conn-${node.name}-${idx}`}>
             <path
@@ -557,6 +562,7 @@ const App = () => {
   const [nodePositions, setNodePositions] = useState({});
   const [painOverlayPos, setPainOverlayPos] = useState({ x: null, y: null });
   const [painOverlayDragging, setPainOverlayDragging] = useState(false);
+  const [painOverlayWide, setPainOverlayWide] = useState(false);
   const diagramRef = useRef(null);
 
   const summary = useMemo(() => ({
@@ -857,6 +863,7 @@ const App = () => {
                 roleName={roleName || "Role"}
                 collaborators={collaborators}
                 sharedTasksMap={sharedTasksMap}
+                sharedToolsMap={sharedToolsMap}
                 painPoints={painPoints}
                 expanded={diagramExpanded}
                 nodePositions={nodePositions}
@@ -865,14 +872,19 @@ const App = () => {
               />
               {diagramExpanded && (
                 <div
-                  className={`${styles.painOverlay} ${painOverlayDragging ? styles.painOverlayDragging : ""}`}
+                  className={`${styles.painOverlay} ${painOverlayDragging ? styles.painOverlayDragging : ""} ${painOverlayWide ? styles.painOverlayWide : ""}`}
                   style={{
                     left: painOverlayPos.x ?? "auto",
                     top: painOverlayPos.y ?? "50%"
                   }}
                   onPointerDown={handlePainOverlayPointerDown}
                 >
-                  <Subtitle2>Pain points</Subtitle2>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: tokens.spacingHorizontalS }}>
+                    <Subtitle2>Pain points</Subtitle2>
+                    <Button size="small" appearance="subtle" onClick={() => setPainOverlayWide(!painOverlayWide)}>
+                      {painOverlayWide ? "Collapse" : "Expand"}
+                    </Button>
+                  </div>
                   <div style={{ marginTop: tokens.spacingVerticalXS }}>
                     <Table size="small">
                       <TableHeader>
@@ -918,6 +930,7 @@ const App = () => {
                             Cost {painSort.column === "cost" ? (painSort.direction === "asc" ? "▲" : "▼") : ""}
                           </TableHeaderCell>
                           <TableHeaderCell>Task</TableHeaderCell>
+                          <TableHeaderCell>Why painful</TableHeaderCell>
                           <TableHeaderCell></TableHeaderCell>
                         </TableRow>
                       </TableHeader>
@@ -936,6 +949,7 @@ const App = () => {
                               <TableCell>{truncate(p.delay || "—", 16)}</TableCell>
                               <TableCell>{truncate(p.cost || "—", 16)}</TableCell>
                               <TableCell>{truncate(p.task || "—", 18)}</TableCell>
+                              <TableCell>{truncate(p.description || "—", 22)}</TableCell>
                               <TableCell>
                                 <Button
                                   appearance="subtle"
