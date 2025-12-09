@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day-in-the-Life Mapper</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f9f7ff;
+      --card: #ffffff;
+      --primary: #2d1e70;
+      --primary-accent: #5f4ad1;
+      --text: #1f1b2d;
+      --muted: #5a5872;
+      --border: #e2ddf4;
+      --chip: #ebe7ff;
+      --shadow: 0 10px 30px rgba(45, 30, 112, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+      background: radial-gradient(120% 80% at 50% 0%, #ede9ff 0%, #f9f7ff 45%, #ffffff 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 28px 18px 12px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -0.03em;
+      color: var(--primary);
+    }
+
+    header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 18px 40px;
+      display: grid;
+      gap: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      color: var(--primary);
+      letter-spacing: -0.01em;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: var(--muted);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #fcfbff;
+      font-size: 14px;
+      color: var(--text);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    textarea { min-height: 90px; resize: vertical; }
+
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary-accent);
+      box-shadow: 0 0 0 3px rgba(95, 74, 209, 0.15);
+    }
+
+    .row { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+
+    .list-add {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+    }
+
+    button {
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.2s ease;
+      box-shadow: 0 8px 18px rgba(45, 30, 112, 0.15);
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      background: var(--chip);
+      color: var(--text);
+      border-radius: 999px;
+      font-size: 13px;
+      margin: 4px 6px 4px 0;
+      border: 1px solid var(--border);
+    }
+
+    .chip button {
+      background: transparent;
+      color: var(--muted);
+      padding: 0 6px;
+      box-shadow: none;
+      border-radius: 50%;
+      font-size: 14px;
+    }
+
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .summary {
+      display: grid;
+      gap: 10px;
+    }
+
+    .summary-item {
+      display: grid;
+      gap: 4px;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 4px 8px;
+      background: #f3f1ff;
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--primary);
+      border: 1px dashed var(--border);
+    }
+
+    .empty {
+      color: var(--muted);
+      font-style: italic;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Day-in-the-Life Mapper</h1>
+    <p>Capture a role, its collaborators, tools, goals, and pain points in one view.</p>
+  </header>
+
+  <main>
+    <section class="card section" aria-label="Role details">
+      <h2>Role Overview</h2>
+      <div class="row">
+        <div>
+          <label for="roleName">Role</label>
+          <input id="roleName" type="text" placeholder="e.g., Customer Support Specialist">
+        </div>
+        <div>
+          <label for="headcount">Number of employees</label>
+          <input id="headcount" type="number" min="0" placeholder="e.g., 15">
+        </div>
+      </div>
+      <div>
+        <label for="roleDescription">Description</label>
+        <textarea id="roleDescription" placeholder="What does a typical day look like?"></textarea>
+      </div>
+    </section>
+
+    <section class="card section" aria-label="Goals">
+      <h2>Goals</h2>
+      <div class="list-add">
+        <input id="goalInput" type="text" placeholder="Add a goal">
+        <button data-add="goals">Add</button>
+      </div>
+      <div id="goalList"></div>
+    </section>
+
+    <section class="card section" aria-label="Tools">
+      <h2>Tools</h2>
+      <div class="list-add">
+        <input id="toolInput" type="text" placeholder="Add a tool">
+        <button data-add="tools">Add</button>
+      </div>
+      <div id="toolList"></div>
+    </section>
+
+    <section class="card section" aria-label="Collaborators">
+      <h2>Collaborators</h2>
+      <div class="list-add">
+        <input id="collabInput" type="text" placeholder="Add a collaborating role">
+        <button data-add="collaborators">Add</button>
+      </div>
+      <div id="collabList"></div>
+    </section>
+
+    <section class="card section" aria-label="Pain points">
+      <h2>Pain Points</h2>
+      <div class="list-add">
+        <input id="painInput" type="text" placeholder="Add a pain point">
+        <button data-add="painPoints">Add</button>
+      </div>
+      <div id="painList"></div>
+    </section>
+
+    <section class="card section" aria-label="Summary">
+      <h2>Summary</h2>
+      <div class="summary">
+        <div class="summary-item">
+          <label>Role</label>
+          <div id="summaryRole" class="pill empty">Not set</div>
+        </div>
+        <div class="summary-item">
+          <label>Headcount</label>
+          <div id="summaryHeadcount" class="pill empty">Not set</div>
+        </div>
+        <div class="summary-item">
+          <label>Description</label>
+          <div id="summaryDescription" class="empty">No description yet.</div>
+        </div>
+        <div class="summary-item">
+          <label>Goals</label>
+          <div id="summaryGoals" class="empty">No goals captured yet.</div>
+        </div>
+        <div class="summary-item">
+          <label>Tools</label>
+          <div id="summaryTools" class="empty">No tools captured yet.</div>
+        </div>
+        <div class="summary-item">
+          <label>Collaborators</label>
+          <div id="summaryCollaborators" class="empty">No collaborators captured yet.</div>
+        </div>
+        <div class="summary-item">
+          <label>Pain Points</label>
+          <div id="summaryPainPoints" class="empty">No pain points captured yet.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      roleName: "",
+      headcount: "",
+      description: "",
+      goals: [],
+      tools: [],
+      collaborators: [],
+      painPoints: []
+    };
+
+    const inputs = {
+      roleName: document.getElementById("roleName"),
+      headcount: document.getElementById("headcount"),
+      description: document.getElementById("roleDescription"),
+      goalInput: document.getElementById("goalInput"),
+      toolInput: document.getElementById("toolInput"),
+      collabInput: document.getElementById("collabInput"),
+      painInput: document.getElementById("painInput")
+    };
+
+    const lists = {
+      goals: document.getElementById("goalList"),
+      tools: document.getElementById("toolList"),
+      collaborators: document.getElementById("collabList"),
+      painPoints: document.getElementById("painList")
+    };
+
+    const summary = {
+      role: document.getElementById("summaryRole"),
+      headcount: document.getElementById("summaryHeadcount"),
+      description: document.getElementById("summaryDescription"),
+      goals: document.getElementById("summaryGoals"),
+      tools: document.getElementById("summaryTools"),
+      collaborators: document.getElementById("summaryCollaborators"),
+      painPoints: document.getElementById("summaryPainPoints")
+    };
+
+    const listButtons = document.querySelectorAll("[data-add]");
+
+    const renderChips = () => {
+      Object.entries(lists).forEach(([key, container]) => {
+        const items = state[key];
+        container.innerHTML = "";
+        if (!items.length) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "Nothing added yet.";
+          container.appendChild(empty);
+          return;
+        }
+        items.forEach((text, index) => {
+          const chip = document.createElement("div");
+          chip.className = "chip";
+          chip.innerHTML = `<span>${text}</span>`;
+
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.textContent = "✕";
+          remove.setAttribute("aria-label", `Remove ${text}`);
+          remove.addEventListener("click", () => {
+            state[key].splice(index, 1);
+            renderChips();
+            renderSummary();
+          });
+
+          chip.appendChild(remove);
+          container.appendChild(chip);
+        });
+      });
+    };
+
+    const renderSummary = () => {
+      const setOrEmpty = (value, emptyText) => {
+        if (!value || (Array.isArray(value) && value.length === 0)) {
+          return { text: emptyText, empty: true };
+        }
+        return { text: value, empty: false };
+      };
+
+      const role = setOrEmpty(state.roleName, "Not set");
+      summary.role.textContent = role.text;
+      summary.role.className = role.empty ? "pill empty" : "pill";
+
+      const headcount = setOrEmpty(state.headcount, "Not set");
+      summary.headcount.textContent = headcount.text;
+      summary.headcount.className = headcount.empty ? "pill empty" : "pill";
+
+      const description = setOrEmpty(state.description, "No description yet.");
+      summary.description.textContent = description.text;
+      summary.description.className = description.empty ? "empty" : "";
+
+      const mapList = (arr, label) => {
+        if (!arr.length) return { text: `No ${label} captured yet.`, empty: true };
+        return { text: arr.join(", "), empty: false };
+      };
+
+      const goalText = mapList(state.goals, "goals");
+      summary.goals.textContent = goalText.text;
+      summary.goals.className = goalText.empty ? "empty" : "";
+
+      const toolText = mapList(state.tools, "tools");
+      summary.tools.textContent = toolText.text;
+      summary.tools.className = toolText.empty ? "empty" : "";
+
+      const collabText = mapList(state.collaborators, "collaborators");
+      summary.collaborators.textContent = collabText.text;
+      summary.collaborators.className = collabText.empty ? "empty" : "";
+
+      const painText = mapList(state.painPoints, "pain points");
+      summary.painPoints.textContent = painText.text;
+      summary.painPoints.className = painText.empty ? "empty" : "";
+    };
+
+    const addItem = (key, inputEl) => {
+      const value = inputEl.value.trim();
+      if (!value) return;
+      state[key].push(value);
+      inputEl.value = "";
+      renderChips();
+      renderSummary();
+    };
+
+    listButtons.forEach((btn) => {
+      const key = btn.dataset.add;
+      btn.addEventListener("click", () => {
+        const inputKey = {
+          goals: "goalInput",
+          tools: "toolInput",
+          collaborators: "collabInput",
+          painPoints: "painInput"
+        }[key];
+        addItem(key, inputs[inputKey]);
+      });
+    });
+
+    ["roleName", "headcount", "description"].forEach((field) => {
+      inputs[field].addEventListener("input", (e) => {
+        state[field === "description" ? "description" : field] = e.target.value;
+        renderSummary();
+      });
+    });
+
+    const handleEnter = (inputEl, key) => {
+      inputEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          addItem(key, inputEl);
+        }
+      });
+    };
+
+    handleEnter(inputs.goalInput, "goals");
+    handleEnter(inputs.toolInput, "tools");
+    handleEnter(inputs.collabInput, "collaborators");
+    handleEnter(inputs.painInput, "painPoints");
+
+    renderChips();
+    renderSummary();
+  </script>
+</body>
+</html>
