@@ -546,7 +546,6 @@ const App = () => {
   const [collabName, setCollabName] = useState("");
   const [painPoints, setPainPoints] = useState([]);
   const [painForm, setPainForm] = useState({
-    title: "",
     severity: 5,
     delay: "",
     cost: "",
@@ -656,16 +655,15 @@ const App = () => {
   }, [painPoints, painSort]);
 
   const addPainPoint = () => {
-    const title = painForm.title.trim();
-    if (!title) return;
-    const severity = Number(painForm.severity) || 0;
     const task = painForm.task.trim();
+    if (!task) return;
+    const severity = Number(painForm.severity) || 0;
     const sharedFlag = painForm.shared || (task && (sharedTasksMap[task]?.length || 0) > 1);
     setPainPoints([
       ...painPoints,
-      { title, severity, delay: painForm.delay.trim(), cost: painForm.cost.trim(), task, shared: sharedFlag }
+      { title: task, severity, delay: painForm.delay.trim(), cost: painForm.cost.trim(), task, shared: sharedFlag }
     ]);
-    setPainForm({ title: "", severity: 5, delay: "", cost: "", task: "", shared: false });
+    setPainForm({ severity: 5, delay: "", cost: "", task: "", shared: false });
   };
 
   const removePainPoint = (idx) => {
@@ -790,20 +788,7 @@ const App = () => {
             <div className={`${styles.diagramWrap} ${diagramExpanded ? styles.diagramExpanded : ""}`}>
               <div className={styles.overlayFooter}>
                 <Switch checked={diagramExpanded} onChange={(_, data) => setDiagramExpanded(data.checked)} label="Expand to full screen" />
-                <Field label="Pain point" style={{ minWidth: "220px" }}>
-                  <Input
-                    placeholder="Describe a pain point"
-                    value={painForm.title}
-                    onChange={(_, d) => setPainForm({ ...painForm, title: d.value })}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addPainPoint();
-                      }
-                    }}
-                  />
-                </Field>
-                <Field label="Task (shared or not)" style={{ minWidth: "200px" }}>
+                <Field label="Task (shared or not)" style={{ minWidth: "220px" }}>
                   <Combobox
                     placeholder="Select or type a task"
                     freeform
