@@ -186,20 +186,32 @@ const AddableList = ({ label, placeholder, items, onAdd, onRemove }) => {
         </div>
       </Field>
       <div style={{ marginTop: tokens.spacingVerticalS }}>
-        <TagGroup aria-label={`${label} list`}>
-          {items.length === 0 && <Text className="muted">Nothing added yet.</Text>}
+        {items.length === 0 && <Text className="muted">Nothing added yet.</Text>}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: tokens.spacingHorizontalXS }}>
           {items.map((item, idx) => (
-            <Tag
+            <div
               key={`${item}-${idx}`}
-              shape="rounded"
-              appearance="brand"
-              dismissible
-              onDismiss={() => onRemove(idx)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: tokens.spacingHorizontalXXS,
+                padding: "6px 10px",
+                borderRadius: "16px",
+                background: tokens.colorNeutralBackground3,
+                border: `1px solid ${tokens.colorNeutralStroke2}`
+              }}
             >
-              {item}
-            </Tag>
+              <Text>{item}</Text>
+              <Button
+                size="small"
+                appearance="subtle"
+                icon={<Delete16Regular />}
+                aria-label={`Remove ${item}`}
+                onClick={() => onRemove(idx)}
+              />
+            </div>
           ))}
-        </TagGroup>
+        </div>
       </div>
     </div>
   );
@@ -330,12 +342,12 @@ const Diagram = React.forwardRef(
     const centerX = width / 2;
     const centerY = height / 2;
     const radius = expanded ? 240 : 220;
-    const nodeWidth = 220;
-    const nodeHeight = 110;
+    const nodeWidth = 240;
+    const nodeHeight = 120;
     const roleWidth = 300;
     const roleHeight = 160;
-    const roleAvatarR = 30;
-    const nodeAvatarR = 22;
+    const roleAvatarR = 24;
+    const nodeAvatarR = 24;
 
     const localSvgRef = useRef(null);
     const mergedRef = (node) => {
@@ -411,20 +423,15 @@ const Diagram = React.forwardRef(
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
       >
-        <defs>
-          <linearGradient id="roleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={tokens.colorBrandBackground} stopOpacity="0.9" />
-            <stop offset="100%" stopColor={tokens.colorBrandBackground2} stopOpacity="0.9" />
-          </linearGradient>
-          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="rgba(0,0,0,0.18)" />
-          </filter>
-          <radialGradient id="bg" cx="50%" cy="40%" r="70%">
-            <stop offset="0%" stopColor={tokens.colorBrandBackground2} stopOpacity="0.08" />
-            <stop offset="100%" stopColor={tokens.colorNeutralBackground1} stopOpacity="0.8" />
-          </radialGradient>
-        </defs>
-        <rect x="0" y="0" width={width} height={height} fill="url(#bg)" rx="18" />
+      <defs>
+        <linearGradient id="roleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor={tokens.colorBrandBackground} stopOpacity="0.9" />
+          <stop offset="100%" stopColor={tokens.colorBrandBackground2} stopOpacity="0.9" />
+        </linearGradient>
+        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="rgba(0,0,0,0.18)" />
+        </filter>
+      </defs>
 
         <g>
       {nodes.map((node, idx) => {
