@@ -1,0 +1,428 @@
+import React, { useMemo, useState } from "react";
+import {
+  FluentProvider,
+  webLightTheme,
+  Card,
+  CardHeader,
+  Button,
+  Input,
+  Textarea,
+  Field,
+  makeStyles,
+  tokens,
+  Title3,
+  Subtitle2,
+  Text,
+  Tag,
+  TagGroup,
+  Divider,
+  Body1Strong
+} from "@fluentui/react-components";
+import { Delete16Regular, Add16Regular } from "@fluentui/react-icons";
+
+const useStyles = makeStyles({
+  shell: {
+    maxWidth: "1200px",
+    margin: "0 auto",
+    display: "flex",
+    flexDirection: "column",
+    gap: tokens.spacingVerticalXL
+  },
+  header: {
+    display: "flex",
+    flexDirection: "column",
+    gap: tokens.spacingVerticalS
+  },
+  grid: {
+    display: "grid",
+    gap: tokens.spacingHorizontalM,
+    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))"
+  },
+  stack: { display: "flex", flexDirection: "column", gap: tokens.spacingVerticalM },
+  row: { display: "flex", gap: tokens.spacingHorizontalS, alignItems: "flex-end" },
+  summaryGrid: {
+    display: "grid",
+    gap: tokens.spacingHorizontalL,
+    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))"
+  },
+  muted: { color: tokens.colorNeutralForeground3 },
+  collaborators: { display: "flex", flexDirection: "column", gap: tokens.spacingVerticalM },
+  collaboratorBlock: {
+    borderRadius: tokens.borderRadiusLarge,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    padding: tokens.spacingHorizontalM,
+    display: "flex",
+    flexDirection: "column",
+    gap: tokens.spacingVerticalS,
+    backgroundColor: tokens.colorNeutralBackground2
+  },
+  collaboratorHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+  diagramWrap: {
+    width: "100%",
+    maxWidth: "100%",
+    height: "380px"
+  }
+});
+
+const AddableList = ({ label, placeholder, items, onAdd, onRemove }) => {
+  const [value, setValue] = useState("");
+
+  const handleAdd = () => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    onAdd(trimmed);
+    setValue("");
+  };
+
+  return (
+    <div className="list">
+      <Field label={label} required>
+        <div style={{ display: "flex", gap: tokens.spacingHorizontalXS }}>
+          <Input
+            value={value}
+            placeholder={placeholder}
+            onChange={(_, data) => setValue(data.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleAdd();
+              }
+            }}
+          />
+          <Button appearance="primary" onClick={handleAdd} icon={<Add16Regular />}>
+            Add
+          </Button>
+        </div>
+      </Field>
+      <div style={{ marginTop: tokens.spacingVerticalS }}>
+        <TagGroup aria-label={`${label} list`}>
+          {items.length === 0 && <Text className="muted">Nothing added yet.</Text>}
+          {items.map((item, idx) => (
+            <Tag
+              key={`${item}-${idx}`}
+              shape="rounded"
+              appearance="brand"
+              dismissible
+              onDismiss={() => onRemove(idx)}
+            >
+              {item}
+            </Tag>
+          ))}
+        </TagGroup>
+      </div>
+    </div>
+  );
+};
+
+const CollaboratorCard = ({ collaborator, styles, onRemove, onAddTask, onRemoveTask }) => {
+  const [taskValue, setTaskValue] = useState("");
+
+  const addTask = () => {
+    const trimmed = taskValue.trim();
+    if (!trimmed) return;
+    onAddTask(trimmed);
+    setTaskValue("");
+  };
+
+  return (
+    <div className={styles.collaboratorBlock}>
+      <div className={styles.collaboratorHeader}>
+        <Subtitle2>{collaborator.name}</Subtitle2>
+        <Button
+          appearance="subtle"
+          icon={<Delete16Regular />}
+          aria-label={`Remove ${collaborator.name}`}
+          onClick={onRemove}
+        >
+          Remove
+        </Button>
+      </div>
+      <Field label="Tasks between this role and collaborator">
+        <div style={{ display: "flex", gap: tokens.spacingHorizontalXS }}>
+          <Input
+            value={taskValue}
+            placeholder="Add a shared task"
+            onChange={(_, data) => setTaskValue(data.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addTask();
+              }
+            }}
+          />
+          <Button icon={<Add16Regular />} appearance="primary" onClick={addTask}>
+            Add
+          </Button>
+        </div>
+      </Field>
+      <TagGroup aria-label="Tasks" style={{ marginTop: tokens.spacingVerticalXS }}>
+        {collaborator.tasks.length === 0 && <Text className={styles.muted}>No tasks yet.</Text>}
+        {collaborator.tasks.map((task, idx) => (
+          <Tag key={`${task}-${idx}`} dismissible onDismiss={() => onRemoveTask(idx)} shape="rounded">
+            {task}
+          </Tag>
+        ))}
+      </TagGroup>
+    </div>
+  );
+};
+
+const Diagram = ({ roleName, collaborators }) => {
+  const width = 900;
+  const height = 380;
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const radius = 150;
+  const nodeRadius = 18;
+
+  const nodes = useMemo(() => {
+    if (collaborators.length === 0) return [];
+    return collaborators.map((collab, idx) => {
+      const angle = (2 * Math.PI * idx) / collaborators.length - Math.PI / 2;
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+      return { ...collab, x, y };
+    });
+  }, [collaborators]);
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Role to collaborator tasks" style={{ width: "100%", height: "100%" }}>
+      <defs>
+        <linearGradient id="roleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor={tokens.colorBrandBackground} stopOpacity="0.9" />
+          <stop offset="100%" stopColor={tokens.colorBrandBackground2} stopOpacity="0.9" />
+        </linearGradient>
+      </defs>
+      <circle cx={centerX} cy={centerY} r={32} fill="url(#roleGradient)" />
+      <text x={centerX} y={centerY + 4} textAnchor="middle" fontSize="13" fill="white" fontWeight="700">
+        {roleName || "Role"}
+      </text>
+
+      {nodes.map((node, idx) => {
+        const midX = (centerX + node.x) / 2;
+        const midY = (centerY + node.y) / 2;
+        const tasksText = node.tasks.length ? node.tasks.join(" • ") : "Add tasks";
+        return (
+          <g key={node.name + idx}>
+            <line
+              x1={centerX}
+              y1={centerY}
+              x2={node.x}
+              y2={node.y}
+              stroke={tokens.colorNeutralStroke1}
+              strokeWidth="2"
+              strokeDasharray="4 3"
+            />
+            <circle cx={node.x} cy={node.y} r={nodeRadius} fill={tokens.colorNeutralBackground6} stroke={tokens.colorNeutralStroke1} />
+            <text x={node.x} y={node.y + 4} textAnchor="middle" fontSize="12" fill={tokens.colorNeutralForeground1} fontWeight="600">
+              {node.name}
+            </text>
+            <text x={midX} y={midY - 8} textAnchor="middle" fontSize="11" fill={tokens.colorNeutralForeground2}>
+              {tasksText}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+};
+
+const SummarySection = ({ title, value, fallback, tags }) => (
+  <div>
+    <Body1Strong>{title}</Body1Strong>
+    {tags ? (
+      <TagGroup aria-label={`${title} summary`} style={{ marginTop: tokens.spacingVerticalXS }}>
+        {tags.length === 0 ? <Text className="muted">{fallback}</Text> : tags.map((t, i) => (
+          <Tag key={`${t}-${i}`} appearance="outline" shape="rounded">{t}</Tag>
+        ))}
+      </TagGroup>
+    ) : (
+      <Text className={value ? "" : "muted"}>
+        {value || fallback}
+      </Text>
+    )}
+  </div>
+);
+
+const App = () => {
+  const styles = useStyles();
+  const [roleName, setRoleName] = useState("");
+  const [headcount, setHeadcount] = useState("");
+  const [description, setDescription] = useState("");
+  const [goals, setGoals] = useState([]);
+  const [tools, setTools] = useState([]);
+  const [collaborators, setCollaborators] = useState([]);
+  const [collabName, setCollabName] = useState("");
+  const [painPoints, setPainPoints] = useState([]);
+
+  const summary = useMemo(() => ({
+    role: roleName || "Not set",
+    headcount: headcount || "Not set",
+    description: description || "No description yet.",
+    goals,
+    tools,
+    collaborators: collaborators.map((c) => c.name),
+    painPoints
+  }), [roleName, headcount, description, goals, tools, collaborators, painPoints]);
+
+  const addCollaborator = () => {
+    const trimmed = collabName.trim();
+    if (!trimmed) return;
+    setCollaborators([...collaborators, { name: trimmed, tasks: [] }]);
+    setCollabName("");
+  };
+
+  const removeCollaborator = (idx) => {
+    setCollaborators(collaborators.filter((_, i) => i !== idx));
+  };
+
+  const addTaskToCollaborator = (idx, task) => {
+    setCollaborators(collaborators.map((c, i) => (i === idx ? { ...c, tasks: [...c.tasks, task] } : c)));
+  };
+
+  const removeTaskFromCollaborator = (collabIdx, taskIdx) => {
+    setCollaborators(collaborators.map((c, i) => {
+      if (i !== collabIdx) return c;
+      return { ...c, tasks: c.tasks.filter((_, tIdx) => tIdx !== taskIdx) };
+    }));
+  };
+
+  return (
+    <FluentProvider theme={webLightTheme}>
+      <div className={styles.shell}>
+        <header className={styles.header}>
+          <Title3>Day-in-the-Life Mapper</Title3>
+          <Text className={styles.muted}>Capture a role, collaborators, tools, goals, and pain points with Fluent UI.</Text>
+        </header>
+
+        <div className={styles.grid}>
+          <Card>
+            <CardHeader
+              header={<Subtitle2>Role Overview</Subtitle2>}
+              description={<Text className={styles.muted}>Role basics that inform everything else.</Text>}
+            />
+            <div className={styles.stack}>
+              <Field label="Role" required>
+                <Input placeholder="e.g., Customer Support Specialist" value={roleName} onChange={(_, d) => setRoleName(d.value)} />
+              </Field>
+              <Field label="Number of employees">
+                <Input type="number" min={0} placeholder="e.g., 15" value={headcount} onChange={(_, d) => setHeadcount(d.value)} />
+              </Field>
+              <Field label="Description">
+                <Textarea placeholder="What does a typical day look like?" value={description} onChange={(_, d) => setDescription(d.value)} />
+              </Field>
+            </div>
+          </Card>
+
+          <Card>
+            <CardHeader header={<Subtitle2>Goals</Subtitle2>} description={<Text className={styles.muted}>Desired outcomes.</Text>} />
+            <AddableList
+              label="Goal"
+              placeholder="Add a goal"
+              items={goals}
+              onAdd={(v) => setGoals([...goals, v])}
+              onRemove={(idx) => setGoals(goals.filter((_, i) => i !== idx))}
+            />
+          </Card>
+
+          <Card>
+            <CardHeader header={<Subtitle2>Tools</Subtitle2>} description={<Text className={styles.muted}>Systems and instruments.</Text>} />
+            <AddableList
+              label="Tool"
+              placeholder="Add a tool"
+              items={tools}
+              onAdd={(v) => setTools([...tools, v])}
+              onRemove={(idx) => setTools(tools.filter((_, i) => i !== idx))}
+            />
+          </Card>
+
+          <Card>
+            <CardHeader header={<Subtitle2>Collaborators & Tasks</Subtitle2>} description={<Text className={styles.muted}>Link collaborators to this role and map shared tasks.</Text>} />
+            <div className={styles.stack}>
+              <Field label="Collaborator">
+                <div style={{ display: "flex", gap: tokens.spacingHorizontalXS }}>
+                  <Input
+                    placeholder="e.g., Product Manager"
+                    value={collabName}
+                    onChange={(_, d) => setCollabName(d.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addCollaborator();
+                      }
+                    }}
+                  />
+                  <Button appearance="primary" icon={<Add16Regular />} onClick={addCollaborator}>
+                    Add
+                  </Button>
+                </div>
+              </Field>
+              <div className={styles.collaborators}>
+                {collaborators.length === 0 && <Text className={styles.muted}>No collaborators yet. Add one to define shared tasks.</Text>}
+                {collaborators.map((collab, idx) => (
+                  <CollaboratorCard
+                    key={collab.name + idx}
+                    collaborator={collab}
+                    styles={styles}
+                    onRemove={() => removeCollaborator(idx)}
+                    onAddTask={(task) => addTaskToCollaborator(idx, task)}
+                    onRemoveTask={(taskIdx) => removeTaskFromCollaborator(idx, taskIdx)}
+                  />
+                ))}
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <CardHeader header={<Subtitle2>Pain Points</Subtitle2>} description={<Text className={styles.muted}>Friction, blockers, risks.</Text>} />
+            <AddableList
+              label="Pain point"
+              placeholder="Add a pain point"
+              items={painPoints}
+              onAdd={(v) => setPainPoints([...painPoints, v])}
+              onRemove={(idx) => setPainPoints(painPoints.filter((_, i) => i !== idx))}
+            />
+          </Card>
+
+          <Card>
+            <CardHeader
+              header={<Subtitle2>Summary</Subtitle2>}
+              description={<Text className={styles.muted}>Live view of the day-in-the-life.</Text>}
+            />
+            <div className={styles.stack}>
+              <div className={styles.summaryGrid}>
+                <SummarySection title="Role" value={summary.role} fallback="Not set" />
+                <SummarySection title="Headcount" value={summary.headcount} fallback="Not set" />
+              </div>
+              <Divider />
+              <SummarySection title="Description" value={summary.description} fallback="No description yet." />
+              <Divider />
+              <div className={styles.summaryGrid}>
+                <SummarySection title="Goals" tags={summary.goals} fallback="No goals captured yet." />
+                <SummarySection title="Tools" tags={summary.tools} fallback="No tools captured yet." />
+                <SummarySection title="Collaborators" tags={summary.collaborators} fallback="No collaborators captured yet." />
+                <SummarySection title="Pain Points" tags={summary.painPoints} fallback="No pain points captured yet." />
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <CardHeader
+              header={<Subtitle2>Collaboration Map</Subtitle2>}
+              description={<Text className={styles.muted}>Visio-style visualization of the role and collaborator links with tasks.</Text>}
+            />
+            <div className={styles.diagramWrap}>
+              <Diagram roleName={roleName || "Role"} collaborators={collaborators} />
+            </div>
+          </Card>
+        </div>
+      </div>
+    </FluentProvider>
+  );
+};
+
+export default App;
