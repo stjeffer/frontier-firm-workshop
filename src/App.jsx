@@ -52,12 +52,13 @@ const useStyles = makeStyles({
   collaborators: { display: "flex", flexDirection: "column", gap: tokens.spacingVerticalM },
   collaboratorBlock: {
     borderRadius: tokens.borderRadiusLarge,
-    border: `1px solid ${tokens.colorNeutralStroke2}`,
-    padding: tokens.spacingHorizontalM,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    padding: tokens.spacingHorizontalL,
     display: "flex",
     flexDirection: "column",
     gap: tokens.spacingVerticalS,
-    backgroundColor: tokens.colorNeutralBackground2
+    backgroundColor: tokens.colorNeutralBackground1,
+    boxShadow: tokens.shadow16
   },
   collaboratorHeader: {
     display: "flex",
@@ -142,6 +143,24 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorNeutralBackground4,
     color: tokens.colorNeutralForeground1,
     border: `1px solid ${tokens.colorNeutralStroke2}`
+  },
+  visualSplit: {
+    display: "flex",
+    gap: tokens.spacingHorizontalL,
+    alignItems: "stretch",
+    height: "100%"
+  },
+  visualPane: {
+    flex: 2,
+    minWidth: 0
+  },
+  painPane: {
+    flex: 1,
+    minWidth: "320px",
+    maxWidth: "420px",
+    display: "flex",
+    flexDirection: "column",
+    gap: tokens.spacingVerticalS
   }
 });
 
@@ -348,13 +367,13 @@ const Diagram = React.forwardRef(
     const height = expanded ? 1100 : 360;
     const centerX = width / 2;
     const centerY = height / 2;
-    const radius = expanded ? 240 : 220;
-    const nodeWidth = 240;
-    const nodeHeight = 120;
+    const radius = expanded ? 260 : 220;
+    const nodeWidth = expanded ? 280 : 240;
+    const nodeHeight = expanded ? 140 : 120;
     const roleWidth = 300;
     const roleHeight = 160;
     const roleAvatarR = 28;
-    const nodeAvatarR = 28;
+    const nodeAvatarR = 26;
 
     const localSvgRef = useRef(null);
     const mergedRef = (node) => {
@@ -375,16 +394,22 @@ const Diagram = React.forwardRef(
       });
     }, [collaborators, nodePositions]);
 
-    useEffect(() => {
-      const valid = new Set(nodes.map((n) => n.key));
-      setNodePositions((prev) => {
-        const next = {};
-        Object.entries(prev || {}).forEach(([k, v]) => {
-          if (valid.has(k)) next[k] = v;
-        });
-        return next;
+  useEffect(() => {
+    const valid = new Set(nodes.map((n) => n.key));
+    setNodePositions((prev) => {
+      const next = {};
+      Object.entries(prev || {}).forEach(([k, v]) => {
+        if (valid.has(k)) next[k] = v;
       });
-    }, [nodes, setNodePositions]);
+      // avoid state update if nothing changed
+      const prevKeys = Object.keys(prev || {});
+      const nextKeys = Object.keys(next);
+      if (prevKeys.length === nextKeys.length && prevKeys.every((k) => next[k] === prev[k])) {
+        return prev;
+      }
+      return next;
+    });
+  }, [nodes, setNodePositions]);
 
     const updatePosition = (key, clientX, clientY, offset = { x: 0, y: 0 }) => {
       const rect = (svgRef?.current || localSvgRef.current)?.getBoundingClientRect();
@@ -444,12 +469,11 @@ const Diagram = React.forwardRef(
       {nodes.map((node, idx) => {
         const midX = (centerX + node.x) / 2;
         const midY = (centerY + node.y) / 2;
-          const angle = Math.atan2(node.y - centerY, node.x - centerX);
-          const curveOffset = 30;
-          const ctrlX = midX + curveOffset * Math.cos(angle + Math.PI / 2);
-          const ctrlY = midY + curveOffset * Math.sin(angle + Math.PI / 2);
-          const sharedLabel = (node.tasks.filter((t) => (sharedTasksMap[t]?.length || 0) > 1).join(" • ")) || "";
-          const sharedTools = (node.tools || []).filter((t) => (sharedToolsMap?.[t]?.length || 0) > 1);
+        const angle = Math.atan2(node.y - centerY, node.x - centerX);
+        const curveOffset = 30;
+        const ctrlX = midX + curveOffset * Math.cos(angle + Math.PI / 2);
+        const ctrlY = midY + curveOffset * Math.sin(angle + Math.PI / 2);
+        const tasksList = node.tasks || [];
         return (
           <g key={`conn-${node.name}-${idx}`}>
             <path
@@ -460,16 +484,47 @@ const Diagram = React.forwardRef(
               strokeDasharray="6 4"
               opacity="0.35"
             />
-            {sharedLabel ? (
-              <text x={midX} y={midY - 8} textAnchor="middle" fontSize="10" fill={tokens.colorNeutralForeground2}>
-                {truncate(sharedLabel, 22)}
-              </text>
-            ) : null}
-            {sharedTools.length ? (
-              <text x={midX} y={midY + 10} textAnchor="middle" fontSize="10" fill={tokens.colorNeutralForeground2}>
-                {truncate(`Tools: ${sharedTools.join(", ")}`, 22)}
-              </text>
-            ) : null}
+            {tasksList.length > 0 && (() => {
+              const pillData = tasksList.map((t) => {
+                const text = truncate(t, 18);
+                const width = Math.max(40, text.length * 7 + 20);
+                return { text, width };
+              });
+              const gap = 8;
+              const total = pillData.reduce((acc, p) => acc + p.width, 0) + gap * (pillData.length - 1);
+              let cursor = midX - total / 2;
+              return (
+                <g>
+                  {pillData.map((p, i) => {
+                    const x = cursor;
+                    cursor += p.width + gap;
+                    return (
+                      <g key={`${node.name}-pill-${i}`}>
+                        <rect
+                          x={x}
+                          y={midY - 18}
+                          width={p.width}
+                          height={20}
+                          rx={10}
+                          fill={tokens.colorNeutralBackground1}
+                          stroke={tokens.colorNeutralStroke1}
+                        />
+                        <text
+                          x={x + p.width / 2}
+                          y={midY - 4}
+                          textAnchor="middle"
+                          fontSize="11"
+                          fill={tokens.colorNeutralForeground1}
+                          fontWeight="600"
+                        >
+                          {p.text}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </g>
+              );
+            })()}
           </g>
         );
       })}
@@ -526,26 +581,26 @@ const Diagram = React.forwardRef(
               stroke={tokens.colorNeutralStroke2}
             />
             <circle
-              cx={28}
+              cx={44}
               cy={nodeHeight / 2}
               r={nodeAvatarR}
               fill={tokens.colorPaletteBlueBorderActive}
               stroke={tokens.colorNeutralBackground1}
               strokeWidth="2"
             />
-            <text x={28} y={nodeHeight / 2 + 4} textAnchor="middle" fontSize="12" fill="white" fontWeight="700">
+            <text x={44} y={nodeHeight / 2 + 5} textAnchor="middle" fontSize="13" fill="white" fontWeight="700">
               {initials(node.name)}
             </text>
             <text
-              x={60}
-              y={nodeHeight / 2 + 3}
-              fontSize="15"
+              x={90}
+              y={nodeHeight / 2 + 4}
+              fontSize={expanded ? "16" : "15"}
               fill={tokens.colorNeutralForeground1}
               fontWeight="700"
               textAnchor="start"
               dominantBaseline="middle"
             >
-              {truncate(node.name, 20)}
+              {truncate(node.name, expanded ? 24 : 20)}
             </text>
             </g>
           </g>
@@ -867,81 +922,30 @@ const App = () => {
                   </>
                 )}
               </div>
-              <Diagram
-                roleName={roleName || "Role"}
-                collaborators={collaborators}
-                sharedTasksMap={sharedTasksMap}
-                sharedToolsMap={sharedToolsMap}
-                painPoints={painPoints}
-                expanded={diagramExpanded}
-                nodePositions={nodePositions}
-                setNodePositions={setNodePositions}
-                ref={diagramRef}
-              />
-              {diagramExpanded && (
-                <div
-                  className={`${styles.painOverlay} ${painOverlayDragging ? styles.painOverlayDragging : ""} ${painOverlayWide ? styles.painOverlayWide : ""}`}
-                  style={{
-                    left: painOverlayPos.x ?? "auto",
-                    top: painOverlayPos.y ?? "50%"
-                  }}
-                  onPointerDown={handlePainOverlayPointerDown}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: tokens.spacingHorizontalS }}>
-                    <Subtitle2>Pain points</Subtitle2>
-                    <Button size="small" appearance="subtle" onClick={() => setPainOverlayWide(!painOverlayWide)}>
-                      {painOverlayWide ? "Collapse" : "Expand"}
-                    </Button>
+              {diagramExpanded ? (
+                <div className={styles.visualSplit}>
+                  <div className={styles.visualPane}>
+                    <Diagram
+                      roleName={roleName || "Role"}
+                      collaborators={collaborators}
+                      sharedTasksMap={sharedTasksMap}
+                      sharedToolsMap={sharedToolsMap}
+                      painPoints={painPoints}
+                      expanded={diagramExpanded}
+                      nodePositions={nodePositions}
+                      setNodePositions={setNodePositions}
+                      ref={diagramRef}
+                    />
                   </div>
-                  <div style={{ marginTop: tokens.spacingVerticalXS }}>
+                  <div className={styles.painPane}>
+                    <Subtitle2>Pain points</Subtitle2>
                     <Table size="small">
                       <TableHeader>
                         <TableRow>
-                          <TableHeaderCell
-                            onClick={() =>
-                              setPainSort({
-                                column: "title",
-                                direction: painSort.column === "title" && painSort.direction === "asc" ? "desc" : "asc"
-                              })
-                            }
-                          >
-                            Title {painSort.column === "title" ? (painSort.direction === "asc" ? "▲" : "▼") : ""}
-                          </TableHeaderCell>
-                          <TableHeaderCell
-                            onClick={() =>
-                              setPainSort({
-                                column: "severity",
-                                direction: painSort.column === "severity" && painSort.direction === "asc" ? "desc" : "asc"
-                              })
-                            }
-                          >
-                            Sev {painSort.column === "severity" ? (painSort.direction === "asc" ? "▲" : "▼") : ""}
-                          </TableHeaderCell>
-                          {painOverlayWide && (
-                            <>
-                              <TableHeaderCell
-                                onClick={() =>
-                                  setPainSort({
-                                    column: "delay",
-                                    direction: painSort.column === "delay" && painSort.direction === "asc" ? "desc" : "asc"
-                                  })
-                                }
-                              >
-                                Delay {painSort.column === "delay" ? (painSort.direction === "asc" ? "▲" : "▼") : ""}
-                              </TableHeaderCell>
-                              <TableHeaderCell
-                                onClick={() =>
-                                  setPainSort({
-                                    column: "cost",
-                                    direction: painSort.column === "cost" && painSort.direction === "asc" ? "desc" : "asc"
-                                  })
-                                }
-                              >
-                                Cost {painSort.column === "cost" ? (painSort.direction === "asc" ? "▲" : "▼") : ""}
-                              </TableHeaderCell>
-                              <TableHeaderCell>Task</TableHeaderCell>
-                            </>
-                          )}
+                          <TableHeaderCell>Task</TableHeaderCell>
+                          <TableHeaderCell>Sev</TableHeaderCell>
+                          <TableHeaderCell>Delay</TableHeaderCell>
+                          <TableHeaderCell>Cost</TableHeaderCell>
                           <TableHeaderCell>Why painful</TableHeaderCell>
                           <TableHeaderCell></TableHeaderCell>
                         </TableRow>
@@ -953,23 +957,19 @@ const App = () => {
                               <Text className={styles.muted}>No pain points yet.</Text>
                             </TableCell>
                           </TableRow>
-                          ) : (
-                            sortedPainPoints.map((p, idx) => (
-                              <TableRow key={`${p.title}-${idx}`}>
-                                <TableCell>{truncate(p.title, 24)}</TableCell>
-                                <TableCell>{p.severity}</TableCell>
-                                {painOverlayWide && (
-                                  <>
-                                    <TableCell>{truncate(p.delay || "—", 16)}</TableCell>
-                                    <TableCell>{truncate(p.cost || "—", 16)}</TableCell>
-                                    <TableCell>{truncate(p.task || "—", 18)}</TableCell>
-                                  </>
-                                )}
-                                <TableCell>{truncate(p.description || "—", 22)}</TableCell>
-                                <TableCell>
-                                  <Button
-                                    appearance="subtle"
-                                    icon={<Delete16Regular />}
+                        ) : (
+                          sortedPainPoints.map((p, idx) => (
+                            <TableRow key={`${p.title}-${idx}`}>
+                              <TableCell>{truncate(p.task || p.title || "—", 22)}</TableCell>
+                              <TableCell>{p.severity}</TableCell>
+                              <TableCell>{truncate(p.delay || "—", 16)}</TableCell>
+                              <TableCell>{truncate(p.cost || "—", 16)}</TableCell>
+                              <TableCell>{truncate(p.description || "—", 28)}</TableCell>
+                              <TableCell>
+                                <Button
+                                  appearance="subtle"
+                                  size="small"
+                                  icon={<Delete16Regular />}
                                   aria-label="Remove pain point"
                                   onClick={() => removePainPoint(idx)}
                                 />
@@ -981,6 +981,18 @@ const App = () => {
                     </Table>
                   </div>
                 </div>
+              ) : (
+                <Diagram
+                  roleName={roleName || "Role"}
+                  collaborators={collaborators}
+                  sharedTasksMap={sharedTasksMap}
+                  sharedToolsMap={sharedToolsMap}
+                  painPoints={painPoints}
+                  expanded={diagramExpanded}
+                  nodePositions={nodePositions}
+                  setNodePositions={setNodePositions}
+                  ref={diagramRef}
+                />
               )}
               <div className={styles.stack} style={{ marginTop: tokens.spacingVerticalM }}>
                 <Divider />
