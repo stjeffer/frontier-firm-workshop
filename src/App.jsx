@@ -138,9 +138,10 @@ const useStyles = makeStyles({
     alignItems: "center",
     gap: tokens.spacingHorizontalXXS,
     padding: "6px 10px",
-    borderRadius: "999px",
-    backgroundColor: tokens.colorBrandBackground2,
-    color: tokens.colorNeutralForegroundOnBrand
+    borderRadius: "6px",
+    backgroundColor: tokens.colorNeutralBackground4,
+    color: tokens.colorNeutralForeground1,
+    border: `1px solid ${tokens.colorNeutralStroke2}`
   }
 });
 
@@ -204,16 +205,16 @@ const AddableList = ({ label, placeholder, items, onAdd, onRemove }) => {
         <div className={styles.pillWrap}>
           {items.map((item, idx) => (
             <span key={`${item}-${idx}`} className={styles.pill}>
-              <Text weight="semibold" style={{ color: tokens.colorNeutralForegroundOnBrand }}>
+              <Text weight="semibold" style={{ color: tokens.colorNeutralForeground1 }}>
                 {item}
               </Text>
               <Button
-                appearance="transparent"
+                appearance="subtle"
                 size="small"
                 icon={<Delete16Regular />}
                 aria-label={`Remove ${item}`}
                 onClick={() => onRemove(idx)}
-                style={{ color: tokens.colorNeutralForegroundOnBrand, minWidth: "auto" }}
+                style={{ color: tokens.colorNeutralForeground2, minWidth: "auto" }}
               />
             </span>
           ))}
@@ -352,8 +353,8 @@ const Diagram = React.forwardRef(
     const nodeHeight = 120;
     const roleWidth = 300;
     const roleHeight = 160;
-    const roleAvatarR = 24;
-    const nodeAvatarR = 24;
+    const roleAvatarR = 28;
+    const nodeAvatarR = 28;
 
     const localSvgRef = useRef(null);
     const mergedRef = (node) => {
