@@ -730,6 +730,67 @@ const App = () => {
     return sorted;
   }, [painPoints, painSort]);
 
+  const painRows = useMemo(
+    () =>
+      sortedPainPoints.map((p, idx) => ({
+        id: idx,
+        task: p.task || p.title || "—",
+        severity: p.severity,
+        delay: p.delay || "—",
+        cost: p.cost || "—",
+        why: p.description || "—"
+    })),
+    [sortedPainPoints]
+  );
+
+  const removePainPoint = (idx) => {
+    setPainPoints(painPoints.filter((_, i) => i !== idx));
+  };
+
+  const painColumns = useMemo(
+    () => [
+      {
+        columnId: "task",
+        renderHeaderCell: () => "Task",
+        renderCell: (item) => truncate(item.task, 22)
+      },
+      {
+        columnId: "severity",
+        renderHeaderCell: () => "Sev",
+        renderCell: (item) => item.severity
+      },
+      {
+        columnId: "delay",
+        renderHeaderCell: () => "Delay",
+        renderCell: (item) => truncate(item.delay, 16)
+      },
+      {
+        columnId: "cost",
+        renderHeaderCell: () => "Cost",
+        renderCell: (item) => truncate(item.cost, 16)
+      },
+      {
+        columnId: "why",
+        renderHeaderCell: () => "Why painful",
+        renderCell: (item) => truncate(item.why, 28)
+      },
+      {
+        columnId: "actions",
+        renderHeaderCell: () => "",
+        renderCell: (item) => (
+          <Button
+            appearance="subtle"
+            size="small"
+            icon={<Delete16Regular />}
+            aria-label="Remove pain point"
+            onClick={() => removePainPoint(item.id)}
+          />
+        )
+      }
+    ],
+    [removePainPoint]
+  );
+
   const addPainPoint = () => {
     const task = painForm.task.trim();
     if (!task) return;
@@ -746,10 +807,6 @@ const App = () => {
       }
     ]);
     setPainForm({ severity: 5, delay: "", cost: "", task: "", description: "" });
-  };
-
-  const removePainPoint = (idx) => {
-    setPainPoints(painPoints.filter((_, i) => i !== idx));
   };
 
   const handlePainOverlayPointerDown = (e) => {
@@ -939,44 +996,38 @@ const App = () => {
                   </div>
                   <div className={styles.painPane}>
                     <Subtitle2>Pain points</Subtitle2>
-                    <Table size="small">
+                    <Table aria-label="Pain points" size="small">
                       <TableHeader>
                         <TableRow>
-                          <TableHeaderCell>Task</TableHeaderCell>
-                          <TableHeaderCell>Sev</TableHeaderCell>
-                          <TableHeaderCell>Delay</TableHeaderCell>
-                          <TableHeaderCell>Cost</TableHeaderCell>
-                          <TableHeaderCell>Why painful</TableHeaderCell>
-                          <TableHeaderCell></TableHeaderCell>
+                          {painColumns.map((col) => {
+                            const isSorted = painSort.column === col.columnId;
+                            return (
+                              <TableHeaderCell
+                                key={col.columnId}
+                                sortDirection={col.columnId === "actions" ? undefined : isSorted ? painSort.direction : undefined}
+                                onClick={() => {
+                                  if (col.columnId === "actions") return;
+                                  setPainSort((prev) =>
+                                    prev.column === col.columnId
+                                      ? { column: col.columnId, direction: prev.direction === "asc" ? "desc" : "asc" }
+                                      : { column: col.columnId, direction: col.columnId === "severity" ? "desc" : "asc" }
+                                  );
+                                }}
+                              >
+                                {col.renderHeaderCell()}
+                              </TableHeaderCell>
+                            );
+                          })}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {sortedPainPoints.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={6}>
-                              <Text className={styles.muted}>No pain points yet.</Text>
-                            </TableCell>
+                        {painRows.map((item) => (
+                          <TableRow key={item.id}>
+                            {painColumns.map((col) => (
+                              <TableCell key={col.columnId}>{col.renderCell(item)}</TableCell>
+                            ))}
                           </TableRow>
-                        ) : (
-                          sortedPainPoints.map((p, idx) => (
-                            <TableRow key={`${p.title}-${idx}`}>
-                              <TableCell>{truncate(p.task || p.title || "—", 22)}</TableCell>
-                              <TableCell>{p.severity}</TableCell>
-                              <TableCell>{truncate(p.delay || "—", 16)}</TableCell>
-                              <TableCell>{truncate(p.cost || "—", 16)}</TableCell>
-                              <TableCell>{truncate(p.description || "—", 28)}</TableCell>
-                              <TableCell>
-                                <Button
-                                  appearance="subtle"
-                                  size="small"
-                                  icon={<Delete16Regular />}
-                                  aria-label="Remove pain point"
-                                  onClick={() => removePainPoint(idx)}
-                                />
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
+                        ))}
                       </TableBody>
                     </Table>
                   </div>
