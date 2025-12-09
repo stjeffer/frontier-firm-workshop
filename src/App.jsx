@@ -325,18 +325,17 @@ const Diagram = React.forwardRef(
     },
     svgRef
   ) => {
-    const scale = expanded ? 1.25 : 1;
     const width = 900;
     const height = expanded ? 1100 : 360;
     const centerX = width / 2;
     const centerY = height / 2;
-    const radius = 210 * scale;
-    const nodeWidth = 240 * scale;
-    const nodeHeight = 110 * scale;
-    const roleWidth = (expanded ? 320 : 280);
-    const roleHeight = (expanded ? 170 : 140);
-    const roleAvatarR = (expanded ? 32 : 28);
-    const nodeAvatarR = (expanded ? 22 : 20);
+    const radius = expanded ? 240 : 220;
+    const nodeWidth = 220;
+    const nodeHeight = 110;
+    const roleWidth = 300;
+    const roleHeight = 160;
+    const roleAvatarR = 30;
+    const nodeAvatarR = 22;
 
     const localSvgRef = useRef(null);
     const mergedRef = (node) => {
@@ -487,7 +486,7 @@ const Diagram = React.forwardRef(
         <text
           x={80}
           y={roleHeight / 2}
-          fontSize={expanded ? "20" : "18"}
+          fontSize="16"
           fill={tokens.colorNeutralForeground1}
           fontWeight="700"
           textAnchor="start"
@@ -513,26 +512,26 @@ const Diagram = React.forwardRef(
               stroke={tokens.colorNeutralStroke2}
             />
             <circle
-              cx={28 * scale}
+              cx={28}
               cy={nodeHeight / 2}
               r={nodeAvatarR}
               fill={tokens.colorPaletteBlueBorderActive}
               stroke={tokens.colorNeutralBackground1}
               strokeWidth="2"
             />
-            <text x={28 * scale} y={nodeHeight / 2 + 4} textAnchor="middle" fontSize={expanded ? "13" : "12"} fill="white" fontWeight="700">
+            <text x={28} y={nodeHeight / 2 + 4} textAnchor="middle" fontSize="12" fill="white" fontWeight="700">
               {initials(node.name)}
             </text>
             <text
-              x={60 * scale}
+              x={60}
               y={nodeHeight / 2 + 3}
-              fontSize={expanded ? "17" : "15"}
+              fontSize="15"
               fill={tokens.colorNeutralForeground1}
               fontWeight="700"
               textAnchor="start"
               dominantBaseline="middle"
             >
-             {truncate(node.name, 20)}
+              {truncate(node.name, 20)}
             </text>
             </g>
           </g>
