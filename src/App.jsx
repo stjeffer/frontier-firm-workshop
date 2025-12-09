@@ -550,7 +550,7 @@ const App = () => {
     delay: "",
     cost: "",
     task: "",
-    shared: false
+    description: ""
   });
   const [diagramExpanded, setDiagramExpanded] = useState(false);
   const [painSort, setPainSort] = useState({ column: "severity", direction: "desc" });
@@ -658,12 +658,18 @@ const App = () => {
     const task = painForm.task.trim();
     if (!task) return;
     const severity = Number(painForm.severity) || 0;
-    const sharedFlag = painForm.shared || (task && (sharedTasksMap[task]?.length || 0) > 1);
     setPainPoints([
       ...painPoints,
-      { title: task, severity, delay: painForm.delay.trim(), cost: painForm.cost.trim(), task, shared: sharedFlag }
+      {
+        title: task,
+        severity,
+        delay: painForm.delay.trim(),
+        cost: painForm.cost.trim(),
+        task,
+        description: painForm.description.trim()
+      }
     ]);
-    setPainForm({ severity: 5, delay: "", cost: "", task: "", shared: false });
+    setPainForm({ severity: 5, delay: "", cost: "", task: "", description: "" });
   };
 
   const removePainPoint = (idx) => {
@@ -788,6 +794,8 @@ const App = () => {
             <div className={`${styles.diagramWrap} ${diagramExpanded ? styles.diagramExpanded : ""}`}>
               <div className={styles.overlayFooter}>
                 <Switch checked={diagramExpanded} onChange={(_, data) => setDiagramExpanded(data.checked)} label="Expand to full screen" />
+                {diagramExpanded && (
+                  <>
                 <Field label="Task (shared or not)" style={{ minWidth: "220px" }}>
                   <Combobox
                     placeholder="Select or type a task"
@@ -797,7 +805,7 @@ const App = () => {
                       setPainForm({
                         ...painForm,
                         task: data.optionValue || data.value || "",
-                        shared: (sharedTasksMap[data.optionValue] || []).length > 1
+                        shared: false
                       })
                     }
                     onChange={(_, data) => setPainForm({ ...painForm, task: data.value })}
@@ -832,14 +840,18 @@ const App = () => {
                     onChange={(_, d) => setPainForm({ ...painForm, cost: d.value })}
                   />
                 </Field>
-                <Switch
-                  checked={painForm.shared || (painForm.task && (sharedTasksMap[painForm.task]?.length || 0) > 1)}
-                  onChange={(_, data) => setPainForm({ ...painForm, shared: data.checked })}
-                  label="Mark as shared task"
-                />
+                <Field label="Why is it painful?" style={{ minWidth: "220px" }}>
+                  <Input
+                    placeholder="Describe the impact"
+                    value={painForm.description}
+                    onChange={(_, d) => setPainForm({ ...painForm, description: d.value })}
+                  />
+                </Field>
                 <Button appearance="primary" icon={<Add16Regular />} onClick={addPainPoint}>
                   Add pain point
                 </Button>
+                  </>
+                )}
               </div>
               <Diagram
                 roleName={roleName || "Role"}
