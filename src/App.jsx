@@ -127,7 +127,7 @@ const useStyles = makeStyles({
   },
   painOverlayWide: {
     minWidth: "380px",
-    maxWidth: "520px"
+    maxWidth: "620px"
   }
 });
 
@@ -909,27 +909,31 @@ const App = () => {
                           >
                             Sev {painSort.column === "severity" ? (painSort.direction === "asc" ? "▲" : "▼") : ""}
                           </TableHeaderCell>
-                          <TableHeaderCell
-                            onClick={() =>
-                              setPainSort({
-                                column: "delay",
-                                direction: painSort.column === "delay" && painSort.direction === "asc" ? "desc" : "asc"
-                              })
-                            }
-                          >
-                            Delay {painSort.column === "delay" ? (painSort.direction === "asc" ? "▲" : "▼") : ""}
-                          </TableHeaderCell>
-                          <TableHeaderCell
-                            onClick={() =>
-                              setPainSort({
-                                column: "cost",
-                                direction: painSort.column === "cost" && painSort.direction === "asc" ? "desc" : "asc"
-                              })
-                            }
-                          >
-                            Cost {painSort.column === "cost" ? (painSort.direction === "asc" ? "▲" : "▼") : ""}
-                          </TableHeaderCell>
-                          <TableHeaderCell>Task</TableHeaderCell>
+                          {painOverlayWide && (
+                            <>
+                              <TableHeaderCell
+                                onClick={() =>
+                                  setPainSort({
+                                    column: "delay",
+                                    direction: painSort.column === "delay" && painSort.direction === "asc" ? "desc" : "asc"
+                                  })
+                                }
+                              >
+                                Delay {painSort.column === "delay" ? (painSort.direction === "asc" ? "▲" : "▼") : ""}
+                              </TableHeaderCell>
+                              <TableHeaderCell
+                                onClick={() =>
+                                  setPainSort({
+                                    column: "cost",
+                                    direction: painSort.column === "cost" && painSort.direction === "asc" ? "desc" : "asc"
+                                  })
+                                }
+                              >
+                                Cost {painSort.column === "cost" ? (painSort.direction === "asc" ? "▲" : "▼") : ""}
+                              </TableHeaderCell>
+                              <TableHeaderCell>Task</TableHeaderCell>
+                            </>
+                          )}
                           <TableHeaderCell>Why painful</TableHeaderCell>
                           <TableHeaderCell></TableHeaderCell>
                         </TableRow>
@@ -941,19 +945,23 @@ const App = () => {
                               <Text className={styles.muted}>No pain points yet.</Text>
                             </TableCell>
                           </TableRow>
-                        ) : (
-                          sortedPainPoints.map((p, idx) => (
-                            <TableRow key={`${p.title}-${idx}`}>
-                              <TableCell>{truncate(p.title, 24)}</TableCell>
-                              <TableCell>{p.severity}</TableCell>
-                              <TableCell>{truncate(p.delay || "—", 16)}</TableCell>
-                              <TableCell>{truncate(p.cost || "—", 16)}</TableCell>
-                              <TableCell>{truncate(p.task || "—", 18)}</TableCell>
-                              <TableCell>{truncate(p.description || "—", 22)}</TableCell>
-                              <TableCell>
-                                <Button
-                                  appearance="subtle"
-                                  icon={<Delete16Regular />}
+                          ) : (
+                            sortedPainPoints.map((p, idx) => (
+                              <TableRow key={`${p.title}-${idx}`}>
+                                <TableCell>{truncate(p.title, 24)}</TableCell>
+                                <TableCell>{p.severity}</TableCell>
+                                {painOverlayWide && (
+                                  <>
+                                    <TableCell>{truncate(p.delay || "—", 16)}</TableCell>
+                                    <TableCell>{truncate(p.cost || "—", 16)}</TableCell>
+                                    <TableCell>{truncate(p.task || "—", 18)}</TableCell>
+                                  </>
+                                )}
+                                <TableCell>{truncate(p.description || "—", 22)}</TableCell>
+                                <TableCell>
+                                  <Button
+                                    appearance="subtle"
+                                    icon={<Delete16Regular />}
                                   aria-label="Remove pain point"
                                   onClick={() => removePainPoint(idx)}
                                 />
