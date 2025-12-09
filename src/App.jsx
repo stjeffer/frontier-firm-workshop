@@ -127,6 +127,20 @@ const useStyles = makeStyles({
   painOverlayWide: {
     minWidth: "380px",
     maxWidth: "620px"
+  },
+  pillWrap: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: tokens.spacingHorizontalXS
+  },
+  pill: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalXXS,
+    padding: "6px 10px",
+    borderRadius: "999px",
+    backgroundColor: tokens.colorBrandBackground2,
+    color: tokens.colorNeutralForegroundOnBrand
   }
 });
 
@@ -187,29 +201,21 @@ const AddableList = ({ label, placeholder, items, onAdd, onRemove }) => {
       </Field>
       <div style={{ marginTop: tokens.spacingVerticalS }}>
         {items.length === 0 && <Text className="muted">Nothing added yet.</Text>}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: tokens.spacingHorizontalXS }}>
+        <div className={styles.pillWrap}>
           {items.map((item, idx) => (
-            <div
-              key={`${item}-${idx}`}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: tokens.spacingHorizontalXXS,
-                padding: "6px 10px",
-                borderRadius: "16px",
-                background: tokens.colorNeutralBackground3,
-                border: `1px solid ${tokens.colorNeutralStroke2}`
-              }}
-            >
-              <Text>{item}</Text>
+            <span key={`${item}-${idx}`} className={styles.pill}>
+              <Text weight="semibold" style={{ color: tokens.colorNeutralForegroundOnBrand }}>
+                {item}
+              </Text>
               <Button
+                appearance="transparent"
                 size="small"
-                appearance="subtle"
                 icon={<Delete16Regular />}
                 aria-label={`Remove ${item}`}
                 onClick={() => onRemove(idx)}
+                style={{ color: tokens.colorNeutralForegroundOnBrand, minWidth: "auto" }}
               />
-            </div>
+            </span>
           ))}
         </div>
       </div>
