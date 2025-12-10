@@ -623,6 +623,7 @@ const Diagram = React.forwardRef(
                           fill={tokens.colorNeutralBackground1}
                           stroke={visual.stroke}
                           strokeWidth="2"
+                          zIndex="100"
                         />
                         <rect
                           x={x + 2}
