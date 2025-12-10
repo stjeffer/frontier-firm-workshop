@@ -46,6 +46,30 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalM,
     gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))"
   },
+  rowFull: {
+    display: "grid",
+    gridTemplateColumns: "1fr",
+    gap: tokens.spacingHorizontalM
+  },
+  rowTwo: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
+    gap: tokens.spacingHorizontalM
+  },
+  rowThree: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
+    gap: tokens.spacingHorizontalM
+  },
+  roleOverviewGrid: {
+    display: "grid",
+    gridTemplateColumns: "2fr 1fr",
+    gap: tokens.spacingHorizontalM,
+    alignItems: "end"
+  },
+  roleOverviewDescription: {
+    marginTop: tokens.spacingVerticalS
+  },
   stack: { display: "flex", flexDirection: "column", gap: tokens.spacingVerticalM },
   collaborators: { display: "flex", flexDirection: "column", gap: tokens.spacingVerticalM },
   collaboratorBlock: {
@@ -906,36 +930,27 @@ const App = () => {
   return (
     <FluentProvider theme={webLightTheme}>
       <div className={styles.shell}>
-        <div className={styles.grid}>
+        <div className={styles.rowFull}>
           <Card>
             <CardHeader
               header={<Subtitle2>Role Overview</Subtitle2>}
               description={<Text className={styles.muted}>Role basics that inform everything else.</Text>}
             />
-            <div className={styles.stack}>
+            <div className={styles.roleOverviewGrid}>
               <Field label="Role" required>
                 <Input placeholder="e.g., Customer Support Specialist" value={roleName} onChange={(_, d) => setRoleName(d.value)} />
               </Field>
               <Field label="Number of employees">
                 <Input type="number" min={0} placeholder="e.g., 15" value={headcount} onChange={(_, d) => setHeadcount(d.value)} />
               </Field>
-              <Field label="Description">
-                <Textarea placeholder="What does a typical day look like?" value={description} onChange={(_, d) => setDescription(d.value)} />
-              </Field>
             </div>
+            <Field label="Description" className={styles.roleOverviewDescription}>
+              <Textarea placeholder="What does a typical day look like?" value={description} onChange={(_, d) => setDescription(d.value)} />
+            </Field>
           </Card>
+        </div>
 
-          <Card>
-            <CardHeader header={<Subtitle2>Goals</Subtitle2>} description={<Text className={styles.muted}>Desired outcomes.</Text>} />
-            <AddableList
-              label="Goal"
-              placeholder="Add a goal"
-              items={goals}
-              onAdd={(v) => setGoals([...goals, v])}
-              onRemove={(idx) => setGoals(goals.filter((_, i) => i !== idx))}
-            />
-          </Card>
-
+        <div className={styles.rowTwo}>
           <Card>
             <CardHeader
               header={<Subtitle2>Individual (non-collaborative) tasks</Subtitle2>}
@@ -994,7 +1009,9 @@ const App = () => {
               onRemove={(idx) => setTools(tools.filter((_, i) => i !== idx))}
             />
           </Card>
+        </div>
 
+        <div className={styles.rowThree}>
           <Card>
             <CardHeader header={<Subtitle2>Collaborators & Tasks</Subtitle2>} description={<Text className={styles.muted}>Link collaborators to this role and map shared tasks.</Text>} />
             <div className={styles.stack}>
@@ -1035,6 +1052,19 @@ const App = () => {
             </div>
           </Card>
 
+          <Card>
+            <CardHeader header={<Subtitle2>Goals</Subtitle2>} description={<Text className={styles.muted}>Desired outcomes.</Text>} />
+            <AddableList
+              label="Goal"
+              placeholder="Add a goal"
+              items={goals}
+              onAdd={(v) => setGoals([...goals, v])}
+              onRemove={(idx) => setGoals(goals.filter((_, i) => i !== idx))}
+            />
+          </Card>
+        </div>
+
+        <div className={styles.rowFull}>
           <Card className={styles.wideCard}>
             <CardHeader
               header={<Subtitle2>Collaboration Map</Subtitle2>}
