@@ -768,47 +768,66 @@ const Diagram = React.forwardRef(
           </g>
         ))}
 
-        {soloTasks?.length ? (
-          <g transform={`translate(${centerX - roleWidth / 2}, ${centerY + roleHeight / 2 + 18})`}>
-            <text x={roleWidth / 2} y={0} textAnchor="middle" fontSize="12" fill={tokens.colorNeutralForeground2}>
-              Individual tasks
-            </text>
-            <g transform={`translate(${roleWidth / 2}, 10)`}>
-              {(() => {
-                const badgeHeight = 18;
-                const gap = 8;
-                const totalHeight = soloTasks.length * badgeHeight + (soloTasks.length - 1) * gap;
-                const startY = -totalHeight / 2;
-                return soloTasks.map((task, idx) => {
-                  const y = startY + idx * (badgeHeight + gap);
-                  return (
-                    <g key={`solo-${idx}`} transform={`translate(-40, ${y})`}>
-                      <rect
-                        x={0}
-                        y={-badgeHeight / 2}
-                        width={80}
-                        height={badgeHeight}
-                        rx="9"
-                        fill={tokens.colorNeutralBackground3}
-                        stroke={tokens.colorBrandStroke1}
-                      />
-                      <text
-                        x={40}
-                        y={2}
-                        fontSize="11"
-                        textAnchor="middle"
-                        fill={tokens.colorNeutralForeground1}
-                        fontWeight="600"
-                      >
-                        {truncate(task.title, 14)}
-                      </text>
-                    </g>
-                  );
-                });
-              })()}
+        {soloTasks?.length ? (() => {
+          const badgeHeight = 24;
+          const gap = 12;
+          const totalHeight = soloTasks.length * badgeHeight + (soloTasks.length - 1) * gap;
+          const startY = centerY + roleHeight / 2 + 60 - totalHeight / 2;
+          return (
+            <g>
+              <text
+                x={centerX}
+                y={startY - 18}
+                textAnchor="middle"
+                fontSize="12"
+                fill={tokens.colorNeutralForeground2}
+              >
+                Individual tasks
+              </text>
+              {soloTasks.map((task, idx) => {
+                const y = startY + idx * (badgeHeight + gap);
+                const label = task.title;
+                const width = Math.max(90, label.length * 7 + 28);
+                const x = centerX - width / 2;
+                return (
+                  <g key={`solo-${idx}`}>
+                    <line
+                      x1={centerX}
+                      y1={centerY + roleHeight / 2}
+                      x2={centerX}
+                      y2={y}
+                      stroke={tokens.colorNeutralStroke2}
+                      strokeWidth="1.5"
+                      strokeDasharray="4 3"
+                      opacity="0.6"
+                    />
+                    <rect
+                      x={x}
+                      y={y - badgeHeight / 2}
+                      width={width}
+                      height={badgeHeight}
+                      rx={badgeHeight / 2}
+                      fill={tokens.colorNeutralBackground1}
+                      stroke={tokens.colorBrandStroke1}
+                      strokeWidth="1.5"
+                      filter="url(#shadow)"
+                    />
+                    <text
+                      x={centerX}
+                      y={y + 4}
+                      textAnchor="middle"
+                      fontSize="12"
+                      fill={tokens.colorNeutralForeground1}
+                      fontWeight="700"
+                    >
+                      {label}
+                    </text>
+                  </g>
+                );
+              })}
             </g>
-          </g>
-        ) : null}
+          );
+        })() : null}
       </svg>
     );
   }
