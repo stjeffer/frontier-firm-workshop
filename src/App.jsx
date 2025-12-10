@@ -184,6 +184,18 @@ const stringToHslColor = (str) => {
   return `hsl(${h}, 70%, 55%)`;
 };
 
+const nameColors = (str) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i += 1) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const h = Math.abs(hash) % 360;
+  return {
+    primary: `hsl(${h}, 70%, 55%)`,
+    soft: `hsl(${h}, 70%, 92%)`
+  };
+};
+
 const initials = (name) => {
   if (!name) return "?";
   return name
@@ -419,12 +431,10 @@ const Diagram = React.forwardRef(
     const centerX = width / 2;
     const centerY = height / 2;
     const radius = expanded ? 260 : 220;
-    const nodeWidth = expanded ? 280 : 240;
-    const nodeHeight = expanded ? 140 : 120;
-    const roleWidth = 300;
-    const roleHeight = 160;
-    const roleAvatarR = 28;
-    const nodeAvatarR = 26;
+    const nodeWidth = expanded ? 220 : 190;
+    const nodeHeight = nodeWidth;
+    const roleWidth = expanded ? 320 : 260;
+    const roleHeight = roleWidth;
 
     const localSvgRef = useRef(null);
     const mergedRef = (node) => {
@@ -591,39 +601,48 @@ const Diagram = React.forwardRef(
       })}
         </g>
 
-        <g
-          transform={`translate(${centerX - roleWidth / 2}, ${centerY - roleHeight / 2})`}
-          filter="url(#shadow)"
-        >
-          <rect
-            width={roleWidth}
-            height={roleHeight}
-            rx="16"
-            fill={tokens.colorNeutralBackground1}
-            stroke={tokens.colorNeutralStroke2}
-          />
-        <circle
-          cx={38}
-          cy={roleHeight / 2}
-          r={roleAvatarR}
-          fill={tokens.colorBrandBackground}
-          stroke={tokens.colorNeutralBackground1}
-          strokeWidth="2"
-        />
-        <text x={38} y={roleHeight / 2 + 6} textAnchor="middle" fontSize="14" fill="white" fontWeight="700">
-          {initials(roleName || "Role")}
-        </text>
-        <text
-          x={80}
-          y={roleHeight / 2}
-          fontSize="16"
-          fill={tokens.colorNeutralForeground1}
-          fontWeight="700"
-          textAnchor="start"
-          dominantBaseline="middle"
-        >
-          {truncate(roleName || "Role", 24)}
-        </text>
+        <g transform={`translate(${centerX - roleWidth / 2}, ${centerY - roleHeight / 2})`} filter="url(#shadow)">
+          <rect width={roleWidth} height={roleHeight} rx="16" fill={tokens.colorNeutralBackground1} stroke={tokens.colorNeutralStroke2} />
+          {(() => {
+            const { primary, soft } = nameColors(roleName || "Role");
+            const squareSize = 92;
+            const squareX = roleWidth / 2 - squareSize / 2;
+            const squareY = 24;
+            return (
+              <>
+                <rect x={squareX} y={squareY} width={squareSize} height={squareSize} rx="10" fill={soft} />
+                <circle
+                  cx={roleWidth / 2}
+                  cy={squareY + squareSize / 2}
+                  r={squareSize / 2 - 8}
+                  fill={primary}
+                  stroke={tokens.colorNeutralBackground1}
+                  strokeWidth="2"
+                />
+                <text
+                  x={roleWidth / 2}
+                  y={squareY + squareSize / 2 + 6}
+                  textAnchor="middle"
+                  fontSize="18"
+                  fill="white"
+                  fontWeight="700"
+                >
+                  {initials(roleName || "Role")}
+                </text>
+              </>
+            );
+          })()}
+          <text
+            x={roleWidth / 2}
+            y={roleHeight - 28}
+            fontSize="18"
+            fill={tokens.colorNeutralForeground1}
+            fontWeight="700"
+            textAnchor="middle"
+            dominantBaseline="middle"
+          >
+            {truncate(roleName || "Role", 22)}
+          </text>
         </g>
 
         {nodes.map((node) => (
@@ -641,27 +660,45 @@ const Diagram = React.forwardRef(
               fill={tokens.colorNeutralBackground1}
               stroke={tokens.colorNeutralStroke2}
             />
-            <circle
-              cx={44}
-              cy={nodeHeight / 2}
-              r={nodeAvatarR}
-              fill={tokens.colorPaletteBlueBorderActive}
-              stroke={tokens.colorNeutralBackground1}
-              strokeWidth="2"
-            />
-            <text x={44} y={nodeHeight / 2 + 5} textAnchor="middle" fontSize="13" fill="white" fontWeight="700">
-              {initials(node.name)}
-            </text>
+            {(() => {
+              const { primary, soft } = nameColors(node.name);
+              const squareSize = 70;
+              const squareX = nodeWidth / 2 - squareSize / 2;
+              const squareY = 18;
+              return (
+                <>
+                  <rect x={squareX} y={squareY} width={squareSize} height={squareSize} rx="8" fill={soft} />
+                  <circle
+                    cx={nodeWidth / 2}
+                    cy={squareY + squareSize / 2}
+                    r={squareSize / 2 - 8}
+                    fill={primary}
+                    stroke={tokens.colorNeutralBackground1}
+                    strokeWidth="2"
+                  />
+                  <text
+                    x={nodeWidth / 2}
+                    y={squareY + squareSize / 2 + 5}
+                    textAnchor="middle"
+                    fontSize="14"
+                    fill="white"
+                    fontWeight="700"
+                  >
+                    {initials(node.name)}
+                  </text>
+                </>
+              );
+            })()}
             <text
-              x={90}
-              y={nodeHeight / 2 + 4}
-              fontSize={expanded ? "16" : "15"}
+              x={nodeWidth / 2}
+              y={nodeHeight - 22}
+              fontSize={expanded ? "17" : "16"}
               fill={tokens.colorNeutralForeground1}
               fontWeight="700"
-              textAnchor="start"
+              textAnchor="middle"
               dominantBaseline="middle"
             >
-              {truncate(node.name, expanded ? 24 : 20)}
+              {truncate(node.name, expanded ? 22 : 18)}
             </text>
             </g>
           </g>
