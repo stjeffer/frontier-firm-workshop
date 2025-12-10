@@ -92,7 +92,9 @@ const useStyles = makeStyles({
     display: "flex",
     flexWrap: "wrap",
     gap: tokens.spacingHorizontalM,
-    alignItems: "center"
+    alignItems: "center",
+    padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
+    borderBottom: `1px solid ${tokens.colorNeutralStroke2}`
   },
   wideCard: {
     gridColumn: "span 2",
@@ -126,6 +128,17 @@ const useStyles = makeStyles({
   painOverlayWide: {
     minWidth: "380px",
     maxWidth: "620px"
+  },
+  topNav: {
+    display: "flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalM,
+    justifyContent: "space-between"
+  },
+  topNavLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalM
   },
   pillWrap: {
     display: "flex",
@@ -194,18 +207,36 @@ const severityLabel = {
   5: "Critical issue / repeated failure"
 };
 
-const occurrencesByFrequency = {
-  daily: { weekly: 5, monthly: 22 },
-  weekly: { weekly: 1, monthly: 4.35 },
-  monthly: { weekly: 0.25, monthly: 1 },
-  adhoc: { weekly: 0, monthly: 0 }
-};
+  const occurrencesByFrequency = {
+    daily: { weekly: 5, monthly: 22 },
+    weekly: { weekly: 1, monthly: 4.35 },
+    monthly: { weekly: 0.25, monthly: 1 },
+    adhoc: { weekly: 0, monthly: 0 }
+  };
 
-const formatMinutes = (minutes) => {
-  if (!minutes || Number.isNaN(minutes)) return "—";
-  if (minutes < 60) return `${Math.round(minutes)} mins`;
-  const hours = minutes / 60;
-  return `${hours % 1 === 0 ? hours : hours.toFixed(1)} hrs`;
+  const formatMinutes = (minutes) => {
+    if (!minutes || Number.isNaN(minutes)) return "—";
+    if (minutes < 60) return `${Math.round(minutes)} mins`;
+    const hours = minutes / 60;
+    return `${hours % 1 === 0 ? hours : hours.toFixed(1)} hrs`;
+  };
+
+const painPalette = [
+  { threshold: 1, color: "#107c10", stroke: "#0b6a0b" },
+  { threshold: 2, color: "#c19c00", stroke: "#8b6f00" },
+  { threshold: 3, color: "#f7630c", stroke: "#c3540a" },
+  { threshold: 4, color: "#d13438", stroke: "#b02024" },
+  { threshold: 5, color: "#a4262c", stroke: "#8c1f24" }
+];
+
+const getPainVisual = (painPoints, task) => {
+  const hit = painPoints.find((p) => (p.task || p.title) === task);
+  if (!hit) return { color: tokens.colorNeutralBackground1, stroke: tokens.colorNeutralStroke2, weekly: 0 };
+  const perOccMinutes = (Number(hit.durationValue) || 0) * (hit.durationUnit === "hours" ? 60 : 1);
+  const occ = occurrencesByFrequency[hit.frequency || "weekly"] || occurrencesByFrequency.weekly;
+  const weeklyMinutes = perOccMinutes * (occ.weekly ?? 0);
+  const palette = painPalette[Math.min(Math.max(hit.severity, 1), 5) - 1];
+  return { color: palette.color, stroke: palette.stroke, weekly: weeklyMinutes };
 };
 
 const AddableList = ({ label, placeholder, items, onAdd, onRemove }) => {
@@ -465,7 +496,7 @@ const Diagram = React.forwardRef(
     };
 
     return (
-      <svg
+              <svg
         ref={mergedRef}
         viewBox={`0 0 ${width} ${height}`}
         role="img"
@@ -505,39 +536,49 @@ const Diagram = React.forwardRef(
               opacity="0.35"
             />
             {tasksList.length > 0 && (() => {
-              const pillData = tasksList.map((t) => {
-                const text = truncate(t, 18);
-                const width = Math.max(40, text.length * 7 + 20);
-                return { text, width };
-              });
-              const gap = 8;
-              const total = pillData.reduce((acc, p) => acc + p.width, 0) + gap * (pillData.length - 1);
-              let cursor = midX - total / 2;
+              const pillHeight = 24;
+              const gapY = 10;
+              const totalHeight = tasksList.length * pillHeight + (tasksList.length - 1) * gapY;
+              let startY = midY - totalHeight / 2;
               return (
                 <g>
-                  {pillData.map((p, i) => {
-                    const x = cursor;
-                    cursor += p.width + gap;
+                  {tasksList.map((task, i) => {
+                    const visual = getPainVisual(painPoints, task);
+                    const text = task; // no truncation
+                    const width = Math.max(60, text.length * 7 + 28);
+                    const x = midX - width / 2;
+                    const y = startY + i * (pillHeight + gapY);
                     return (
                       <g key={`${node.name}-pill-${i}`}>
                         <rect
                           x={x}
-                          y={midY - 18}
-                          width={p.width}
-                          height={20}
-                          rx={10}
+                          y={y - pillHeight / 2}
+                          width={width}
+                          height={pillHeight}
+                          rx={12}
                           fill={tokens.colorNeutralBackground1}
-                          stroke={tokens.colorNeutralStroke1}
+                          stroke={visual.stroke}
+                          strokeWidth="2"
+                        />
+                        <rect
+                          x={x + 2}
+                          y={y - pillHeight / 2 + 2}
+                          width={width - 4}
+                          height={pillHeight - 4}
+                          rx={10}
+                          fill={visual.color}
+                          opacity="0.08"
+                          stroke="none"
                         />
                         <text
-                          x={x + p.width / 2}
-                          y={midY - 4}
+                          x={midX}
+                          y={y + 4}
                           textAnchor="middle"
-                          fontSize="11"
+                          fontSize="12"
                           fill={tokens.colorNeutralForeground1}
                           fontWeight="600"
                         >
-                          {p.text}
+                          {text}
                         </text>
                       </g>
                     );
@@ -889,186 +930,188 @@ const App = () => {
             />
             <div className={`${styles.diagramWrap} ${diagramExpanded ? `${styles.diagramExpanded} ${styles.diagramWrapExpanded}` : ""}`}>
               <div className={styles.overlayFooter}>
-                <Switch checked={diagramExpanded} onChange={(_, data) => setDiagramExpanded(data.checked)} label="Expand to full screen" />
-                {diagramExpanded && (
-                  <>
-                <Menu open={painMenuOpen} onOpenChange={(_, data) => setPainMenuOpen(!!data.open)}>
-                  <MenuTrigger disableButtonEnhancement>
-                    <Button appearance="primary" icon={<Add16Regular />}>
-                      Add pain point
-                    </Button>
-                  </MenuTrigger>
-                  <MenuPopover>
-                    <MenuList aria-label="Add pain point grid" style={{ padding: tokens.spacingHorizontalM }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: tokens.spacingVerticalM,
-                          width: "250px",
-                          maxWidth: "420px"
-                        }}
-                      >
-                        <Field label="Task (shared or not)">
-                          <Combobox
-                            placeholder="Select or type a task"
-                            freeform
-                            value={painForm.task}
-                            style={{ width: "100%" }}
-                            onOptionSelect={(_, data) =>
-                              setPainForm({
-                                ...painForm,
-                                task: data.optionValue || data.value || "",
-                                shared: false
-                              })
-                            }
-                            onChange={(_, data) => setPainForm({ ...painForm, task: data.value })}
-                          >
-                            {taskOptions.map((t) => (
-                              <Option key={t} value={t}>
-                                {t} {sharedTasksMap[t]?.length > 1 ? "(shared)" : ""}
-                              </Option>
-                            ))}
-                          </Combobox>
-                        </Field>
-                        <Field label={`Severity (${painForm.severity}/5)`} hint={severityLabel[painForm.severity]}>
-                          <Slider
-                            min={1}
-                            max={5}
-                            step={1}
-                            value={painForm.severity}
-                            onChange={(_, data) => setPainForm({ ...painForm, severity: data.value })}
-                          />
-                        </Field>
-                        <Field label="Frequency">
-                          <Combobox
-                            value={painForm.frequency}
-                            style={{ width: "100%" }}
-                            onOptionSelect={(_, data) =>
-                              setPainForm({ ...painForm, frequency: data.optionValue || data.value || "weekly" })
-                            }
-                            onChange={(_, data) => setPainForm({ ...painForm, frequency: data.value })}
-                          >
-                            {["daily", "weekly", "monthly", "adhoc"].map((f) => (
-                              <Option key={f} value={f}>
-                                {f}
-                              </Option>
-                            ))}
-                          </Combobox>
-                        </Field>
-                        <Field label="Duration (per occurrence)">
-                          <div style={{ display: "flex", gap: tokens.spacingHorizontalXS }}>
-                            <Input
-                              type="number"
-                              min={0}
-                              placeholder="e.g., 30"
-                              value={painForm.durationValue}
-                              style={{ width: "100%" }}
-                              onChange={(_, d) => setPainForm({ ...painForm, durationValue: d.value })}
-                            />
-                            <Combobox
-                              value={painForm.durationUnit}
-                              style={{ width: "120px" }}
-                              onOptionSelect={(_, data) =>
-                                setPainForm({ ...painForm, durationUnit: data.optionValue || data.value || "minutes" })
-                              }
-                              onChange={(_, data) => setPainForm({ ...painForm, durationUnit: data.value })}
-                            >
-                              <Option value="minutes">minutes</Option>
-                              <Option value="hours">hours</Option>
-                            </Combobox>
-                          </div>
-                        </Field>
-                        <Field label="Cost / risk">
-                          <Input
-                            placeholder="$500/week"
-                            value={painForm.cost}
-                            style={{ width: "100%" }}
-                            onChange={(_, d) => setPainForm({ ...painForm, cost: d.value })}
-                          />
-                        </Field>
-                        <Field label="Friction type (max 2)">
-                          <Combobox
-                            multiselect
-                            value={painForm.frictionTypes}
-                            style={{ width: "100%" }}
-                            onOptionSelect={(_, data) => {
-                              const option = data.optionValue || data.value;
-                              if (!option) return;
-                              setPainForm((prev) => {
-                                const current = new Set(prev.frictionTypes || []);
-                                if (current.has(option)) {
-                                  current.delete(option);
-                                } else if (current.size < 2) {
-                                  current.add(option);
-                                }
-                                return { ...prev, frictionTypes: Array.from(current) };
-                              });
-                            }}
-                          >
-                            {[
-                              "Delay (waiting for info, approvals, input)",
-                              "Rework (fixing errors, re-doing work)",
-                              "Manual effort (copy/paste, chasing info)",
-                              "Decision bottleneck (waiting for judgement)",
-                              "Handover friction (Cross-team dependencies)",
-                              "Tool mismatch (wrong or missing system)",
-                              "Compliance/ control burden (over-checking, audit steps)"
-                            ].map((f) => (
-                              <Option key={f} value={f}>
-                                {f}
-                              </Option>
-                            ))}
-                          </Combobox>
-                        </Field>
-                        <Field label="Why is it painful?">
-                          <Textarea
-                            placeholder="Describe the impact"
-                            value={painForm.description}
-                            style={{ width: "100%" }}
-                            rows={3}
-                            onChange={(_, d) => setPainForm({ ...painForm, description: d.value })}
-                          />
-                        </Field>
-                        <div style={{ display: "flex", gap: tokens.spacingHorizontalS, justifyContent: "space-between" }}>
-                          <Text size={200}>
-                            Weekly loss:{" "}
-                            {formatMinutes(
-                              (Number(painForm.durationValue) || 0) *
-                                (painForm.durationUnit === "hours" ? 60 : 1) *
-                                (occurrencesByFrequency[painForm.frequency || "weekly"]?.weekly || 0)
-                            )}
-                          </Text>
-                          <Text size={200}>
-                            Monthly loss:{" "}
-                            {formatMinutes(
-                              (Number(painForm.durationValue) || 0) *
-                                (painForm.durationUnit === "hours" ? 60 : 1) *
-                                (occurrencesByFrequency[painForm.frequency || "weekly"]?.monthly || 0)
-                            )}
-                          </Text>
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "flex-end", gap: tokens.spacingHorizontalS }}>
-                          <Button onClick={() => setPainMenuOpen(false)}>Cancel</Button>
-                          <Button
-                            appearance="primary"
-                            icon={<Add16Regular />}
-                            disabled={!painForm.task.trim()}
-                            onClick={() => {
-                              addPainPoint();
-                              setPainMenuOpen(false);
-                            }}
-                          >
-                            Save
+                <div className={styles.topNav}>
+                  <div className={styles.topNavLeft}>
+                    <Switch checked={diagramExpanded} onChange={(_, data) => setDiagramExpanded(data.checked)} label="Expand to full screen" />
+                    {diagramExpanded && (
+                      <Menu open={painMenuOpen} onOpenChange={(_, data) => setPainMenuOpen(!!data.open)}>
+                        <MenuTrigger disableButtonEnhancement>
+                          <Button appearance="primary" icon={<Add16Regular />}>
+                            Add pain point
                           </Button>
-                        </div>
-                      </div>
-                    </MenuList>
-                  </MenuPopover>
-                </Menu>
-                
-                  </>
-                )}
+                        </MenuTrigger>
+                        <MenuPopover>
+                          <MenuList aria-label="Add pain point grid" style={{ padding: tokens.spacingHorizontalM }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: tokens.spacingVerticalM,
+                                width: "250px",
+                                maxWidth: "420px"
+                              }}
+                            >
+                              <Field label="Task (shared or not)">
+                                <Combobox
+                                  placeholder="Select or type a task"
+                                  freeform
+                                  value={painForm.task}
+                                  style={{ width: "100%" }}
+                                  onOptionSelect={(_, data) =>
+                                    setPainForm({
+                                      ...painForm,
+                                      task: data.optionValue || data.value || "",
+                                      shared: false
+                                    })
+                                  }
+                                  onChange={(_, data) => setPainForm({ ...painForm, task: data.value })}
+                                >
+                                  {taskOptions.map((t) => (
+                                    <Option key={t} value={t}>
+                                      {t} {sharedTasksMap[t]?.length > 1 ? "(shared)" : ""}
+                                    </Option>
+                                  ))}
+                                </Combobox>
+                              </Field>
+                              <Field label={`Severity (${painForm.severity}/5)`} hint={severityLabel[painForm.severity]}>
+                                <Slider
+                                  min={1}
+                                  max={5}
+                                  step={1}
+                                  value={painForm.severity}
+                                  onChange={(_, data) => setPainForm({ ...painForm, severity: data.value })}
+                                />
+                              </Field>
+                              <Field label="Frequency">
+                                <Combobox
+                                  value={painForm.frequency}
+                                  style={{ width: "100%" }}
+                                  onOptionSelect={(_, data) =>
+                                    setPainForm({ ...painForm, frequency: data.optionValue || data.value || "weekly" })
+                                  }
+                                  onChange={(_, data) => setPainForm({ ...painForm, frequency: data.value })}
+                                >
+                                  {["daily", "weekly", "monthly", "adhoc"].map((f) => (
+                                    <Option key={f} value={f}>
+                                      {f}
+                                    </Option>
+                                  ))}
+                                </Combobox>
+                              </Field>
+                              <Field label="Duration (per occurrence)">
+                                <div style={{ display: "flex", gap: tokens.spacingHorizontalXS }}>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    placeholder="e.g., 30"
+                                    value={painForm.durationValue}
+                                    style={{ width: "100%" }}
+                                    onChange={(_, d) => setPainForm({ ...painForm, durationValue: d.value })}
+                                  />
+                                  <Combobox
+                                    value={painForm.durationUnit}
+                                    style={{ width: "120px" }}
+                                    onOptionSelect={(_, data) =>
+                                      setPainForm({ ...painForm, durationUnit: data.optionValue || data.value || "minutes" })
+                                    }
+                                    onChange={(_, data) => setPainForm({ ...painForm, durationUnit: data.value })}
+                                  >
+                                    <Option value="minutes">minutes</Option>
+                                    <Option value="hours">hours</Option>
+                                  </Combobox>
+                                </div>
+                              </Field>
+                              <Field label="Cost / risk">
+                                <Input
+                                  placeholder="$500/week"
+                                  value={painForm.cost}
+                                  style={{ width: "100%" }}
+                                  onChange={(_, d) => setPainForm({ ...painForm, cost: d.value })}
+                                />
+                              </Field>
+                              <Field label="Friction type (max 2)">
+                                <Combobox
+                                  multiselect
+                                  value={painForm.frictionTypes}
+                                  style={{ width: "100%" }}
+                                  onOptionSelect={(_, data) => {
+                                    const option = data.optionValue || data.value;
+                                    if (!option) return;
+                                    setPainForm((prev) => {
+                                      const current = new Set(prev.frictionTypes || []);
+                                      if (current.has(option)) {
+                                        current.delete(option);
+                                      } else if (current.size < 2) {
+                                        current.add(option);
+                                      }
+                                      return { ...prev, frictionTypes: Array.from(current) };
+                                    });
+                                  }}
+                                >
+                                  {[
+                                    "Delay (waiting for info, approvals, input)",
+                                    "Rework (fixing errors, re-doing work)",
+                                    "Manual effort (copy/paste, chasing info)",
+                                    "Decision bottleneck (waiting for judgement)",
+                                    "Handover friction (Cross-team dependencies)",
+                                    "Tool mismatch (wrong or missing system)",
+                                    "Compliance/ control burden (over-checking, audit steps)"
+                                  ].map((f) => (
+                                    <Option key={f} value={f}>
+                                      {f}
+                                    </Option>
+                                  ))}
+                                </Combobox>
+                              </Field>
+                              <Field label="Why is it painful?">
+                                <Textarea
+                                  placeholder="Describe the impact"
+                                  value={painForm.description}
+                                  style={{ width: "100%" }}
+                                  rows={3}
+                                  onChange={(_, d) => setPainForm({ ...painForm, description: d.value })}
+                                />
+                              </Field>
+                              <div style={{ display: "flex", gap: tokens.spacingHorizontalS, justifyContent: "space-between" }}>
+                                <Text size={200}>
+                                  Weekly loss:{" "}
+                                  {formatMinutes(
+                                    (Number(painForm.durationValue) || 0) *
+                                      (painForm.durationUnit === "hours" ? 60 : 1) *
+                                      (occurrencesByFrequency[painForm.frequency || "weekly"]?.weekly || 0)
+                                  )}
+                                </Text>
+                                <Text size={200}>
+                                  Monthly loss:{" "}
+                                  {formatMinutes(
+                                    (Number(painForm.durationValue) || 0) *
+                                      (painForm.durationUnit === "hours" ? 60 : 1) *
+                                      (occurrencesByFrequency[painForm.frequency || "weekly"]?.monthly || 0)
+                                  )}
+                                </Text>
+                              </div>
+                              <div style={{ display: "flex", justifyContent: "flex-end", gap: tokens.spacingHorizontalS }}>
+                                <Button onClick={() => setPainMenuOpen(false)}>Cancel</Button>
+                                <Button
+                                  appearance="primary"
+                                  icon={<Add16Regular />}
+                                  disabled={!painForm.task.trim()}
+                                  onClick={() => {
+                                    addPainPoint();
+                                    setPainMenuOpen(false);
+                                  }}
+                                >
+                                  Save
+                                </Button>
+                              </div>
+                            </div>
+                          </MenuList>
+                        </MenuPopover>
+                      </Menu>
+                    )}
+                  </div>
+                  <Text weight="semibold">Shared tasks appear along the connector lines.</Text>
+                </div>
               </div>
               <Diagram
                 roleName={roleName || "Role"}
