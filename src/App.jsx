@@ -690,7 +690,7 @@ const Diagram = React.forwardRef(
           const startY = centerY - totalHeight / 2;
           const side = 1;
           return (
-            <g mask="url(#soloMask)" style={{ pointerEvents: "all" }}>
+            <g style={{ pointerEvents: "all" }}>
               <text
                 x={centerX + side * (offsetX + 30)}
                 y={startY - 18}
@@ -744,8 +744,7 @@ const Diagram = React.forwardRef(
                       fill={tokens.colorNeutralBackground1}
                       stroke={visual.stroke}
                       strokeWidth="2"
-                      pointerEvents="all"
-                      onClick={() => onTaskSelect?.(task.title)}
+                      pointerEvents="none"
                     />
                     <rect
                       x={x + 2}
