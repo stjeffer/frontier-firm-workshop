@@ -20,13 +20,6 @@ import {
   Option,
   Slider,
   Switch,
-  DataGrid,
-  DataGridHeader,
-  DataGridBody,
-  DataGridRow,
-  DataGridCell,
-  DataGridHeaderCell,
-  createTableColumn,
   Menu,
   MenuTrigger,
   MenuPopover,
@@ -749,112 +742,9 @@ const App = () => {
     return Array.from(set);
   }, [collaborators]);
 
-  const painRows = useMemo(
-    () =>
-      painPoints.map((p, idx) => {
-        const perOccMinutes = (Number(p.durationValue) || 0) * (p.durationUnit === "hours" ? 60 : 1);
-        const occ = occurrencesByFrequency[p.frequency || "weekly"] || occurrencesByFrequency.weekly;
-        const weeklyMinutes = perOccMinutes * (occ.weekly ?? 0);
-        const monthlyMinutes = perOccMinutes * (occ.monthly ?? 0);
-        return {
-          id: idx,
-          task: p.task || p.title || "—",
-          severity: p.severity,
-          frequency: p.frequency || "—",
-          delay: p.delay || "—",
-          cost: p.cost || "—",
-          why: p.description || "—",
-          duration: perOccMinutes ? `${p.durationValue} ${p.durationUnit}` : "—",
-          friction: (p.frictionTypes || []).join(", ") || "—",
-          weeklyLost: formatMinutes(weeklyMinutes),
-          monthlyLost: formatMinutes(monthlyMinutes)
-        };
-      }),
-    [painPoints]
-  );
-
   const removePainPoint = (idx) => {
     setPainPoints(painPoints.filter((_, i) => i !== idx));
   };
-
-  const painColumns = useMemo(
-    () => [
-      createTableColumn({
-        columnId: "task",
-        compare: (a, b) => a.task.localeCompare(b.task),
-        renderHeaderCell: () => "Task",
-        renderCell: (item) => truncate(item.task, 22)
-      }),
-      createTableColumn({
-        columnId: "severity",
-        compare: (a, b) => a.severity - b.severity,
-        renderHeaderCell: () => "Sev",
-        renderCell: (item) => item.severity
-      }),
-      createTableColumn({
-        columnId: "delay",
-        compare: (a, b) => (a.delay || "").localeCompare(b.delay || ""),
-        renderHeaderCell: () => "Delay",
-        renderCell: (item) => truncate(item.delay, 16)
-      }),
-      createTableColumn({
-        columnId: "cost",
-        compare: (a, b) => (a.cost || "").localeCompare(b.cost || ""),
-        renderHeaderCell: () => "Cost",
-        renderCell: (item) => truncate(item.cost, 16)
-      }),
-      createTableColumn({
-        columnId: "frequency",
-        compare: (a, b) => (a.frequency || "").localeCompare(b.frequency || ""),
-        renderHeaderCell: () => "Frequency",
-        renderCell: (item) => item.frequency || "—"
-      }),
-      createTableColumn({
-        columnId: "duration",
-        compare: (a, b) => (a.duration || "").localeCompare(b.duration || ""),
-        renderHeaderCell: () => "Per occurrence",
-        renderCell: (item) => item.duration
-      }),
-      createTableColumn({
-        columnId: "weeklyLost",
-        compare: (a, b) => (a.weeklyLost || "").localeCompare(b.weeklyLost || ""),
-        renderHeaderCell: () => "Weekly time lost",
-        renderCell: (item) => item.weeklyLost
-      }),
-      createTableColumn({
-        columnId: "monthlyLost",
-        compare: (a, b) => (a.monthlyLost || "").localeCompare(b.monthlyLost || ""),
-        renderHeaderCell: () => "Monthly time lost",
-        renderCell: (item) => item.monthlyLost
-      }),
-      createTableColumn({
-        columnId: "friction",
-        compare: (a, b) => (a.friction || "").localeCompare(b.friction || ""),
-        renderHeaderCell: () => "Friction type",
-        renderCell: (item) => truncate(item.friction, 26)
-      }),
-      createTableColumn({
-        columnId: "why",
-        compare: (a, b) => (a.why || "").localeCompare(b.why || ""),
-        renderHeaderCell: () => "Why painful",
-        renderCell: (item) => truncate(item.why, 28)
-      }),
-      createTableColumn({
-        columnId: "actions",
-        renderHeaderCell: () => "",
-        renderCell: (item) => (
-          <Button
-            appearance="subtle"
-            size="small"
-            icon={<Delete16Regular />}
-            aria-label="Remove pain point"
-            onClick={() => removePainPoint(item.id)}
-          />
-        )
-      })
-    ],
-    [removePainPoint]
-  );
 
   const addPainPoint = () => {
     const task = painForm.task.trim();
@@ -1196,32 +1086,48 @@ const App = () => {
                   </div>
                   <div className={styles.painPane}>
                     <Subtitle2>Pain points</Subtitle2>
-                    <DataGrid
-                      items={painRows}
-                      columns={painColumns}
-                      sortable
-                      defaultSortState={{ sortColumn: "severity", sortDirection: "descending" }}
-                      focusMode="cell"
-                      getRowId={(item) => item.id}
-                      style={{ height: "100%" }}
-                    >
-                      <DataGridHeader>
-                        <DataGridRow>
-                          {({ renderHeaderCell, columnId }) => (
-                            <DataGridHeaderCell key={columnId}>{renderHeaderCell()}</DataGridHeaderCell>
-                          )}
-                        </DataGridRow>
-                      </DataGridHeader>
-                      <DataGridBody>
-                        {({ item, rowId }) => (
-                          <DataGridRow key={rowId}>
-                            {({ renderCell, columnId }) => (
-                              <DataGridCell key={columnId}>{renderCell(item)}</DataGridCell>
-                            )}
-                          </DataGridRow>
-                        )}
-                      </DataGridBody>
-                    </DataGrid>
+                    {painPoints.length === 0 && <Text className={styles.muted}>No pain points added yet.</Text>}
+                    <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalS }}>
+                      {painPoints.map((p, idx) => {
+                        const perOccMinutes = (Number(p.durationValue) || 0) * (p.durationUnit === "hours" ? 60 : 1);
+                        const occ = occurrencesByFrequency[p.frequency || "weekly"] || occurrencesByFrequency.weekly;
+                        const weeklyMinutes = perOccMinutes * (occ.weekly ?? 0);
+                        const monthlyMinutes = perOccMinutes * (occ.monthly ?? 0);
+                        return (
+                          <Card key={`pain-${idx}`} appearance="filled" style={{ boxShadow: tokens.shadow8 }}>
+                            <CardHeader
+                              header={
+                                <div style={{ display: "flex", alignItems: "center", gap: tokens.spacingHorizontalS }}>
+                                  <Text weight="semibold">{truncate(p.task || "Task", 30)}</Text>
+                                  <Tag shape="circular" appearance="outline">
+                                    Sev {p.severity}/5
+                                  </Tag>
+                                </div>
+                              }
+                              description={severityLabel[p.severity] || ""}
+                              action={
+                                <Button
+                                  appearance="subtle"
+                                  icon={<Delete16Regular />}
+                                  aria-label="Delete pain point"
+                                  onClick={() => removePainPoint(idx)}
+                                />
+                              }
+                            />
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: tokens.spacingHorizontalS, padding: tokens.spacingHorizontalM }}>
+                              <Text size={200}>Frequency: {p.frequency || "—"}</Text>
+                              <Text size={200}>Per occurrence: {p.durationValue ? `${p.durationValue} ${p.durationUnit}` : "—"}</Text>
+                              <Text size={200}>Weekly loss: {formatMinutes(weeklyMinutes)}</Text>
+                              <Text size={200}>Monthly loss: {formatMinutes(monthlyMinutes)}</Text>
+                              <Text size={200}>Cost/risk: {p.cost || "—"}</Text>
+                              <Text size={200}>Friction: {(p.frictionTypes || []).join(", ") || "—"}</Text>
+                              <Text size={200}>Delay/time: {p.delay || "—"}</Text>
+                              <Text size={200} block>Why: {p.description || "—"}</Text>
+                            </div>
+                          </Card>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               ) : (
