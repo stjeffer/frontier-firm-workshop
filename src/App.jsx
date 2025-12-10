@@ -596,7 +596,8 @@ const Diagram = React.forwardRef(
               stroke={tokens.colorNeutralStroke2}
               strokeWidth="2.5"
               strokeDasharray="6 4"
-              opacity="0.25"
+              opacity="0.18"
+              style={{ pointerEvents: "none" }}
             />
             {tasksList.length > 0 && (() => {
               const pillHeight = 24;
@@ -689,7 +690,8 @@ const Diagram = React.forwardRef(
                       stroke={tokens.colorNeutralStroke2}
                       strokeWidth="1.5"
                       strokeDasharray="4 3"
-                      opacity="0.25"
+                      opacity="0.18"
+                      style={{ pointerEvents: "none" }}
                     />
                     <rect
                       x={x}
@@ -717,6 +719,15 @@ const Diagram = React.forwardRef(
             </g>
           );
         })() : null}
+
+        <rect
+          x={centerX - roleWidth / 2 - 4}
+          y={centerY - roleHeight / 2 - 4}
+          width={roleWidth + 8}
+          height={roleHeight + 8}
+          fill={tokens.colorNeutralBackground1}
+          rx="18"
+        />
 
         <g
           transform={`translate(${centerX - roleWidth / 2}, ${centerY - roleHeight / 2})`}
