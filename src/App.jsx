@@ -1150,40 +1150,46 @@ const App = () => {
   return (
     <FluentProvider theme={webLightTheme}>
       <div className={styles.shell}>
-        <Toolbar aria-label="Workflow actions" className={styles.toolbar}>
-          <ToolbarButton icon={<Add16Regular />} appearance="subtle" onClick={() => setOpenForm("role")}>
-            Role definition
-          </ToolbarButton>
-          <ToolbarDivider />
-          <ToolbarButton icon={<PeopleCommunity16Regular />} appearance="subtle" onClick={() => setOpenForm("collaborators")}>
-            Collaborators & tasks
-          </ToolbarButton>
-          <ToolbarDivider />
-          <ToolbarButton icon={<Add16Regular />} appearance="subtle" onClick={() => setOpenForm("solo")}>
-            Non-collab tasks
-          </ToolbarButton>
-          <ToolbarDivider />
-          <ToolbarButton icon={<Toolbox16Regular />} appearance="subtle" onClick={() => setOpenForm("tools")}>
-            Tools
-          </ToolbarButton>
-          <ToolbarDivider />
-          <ToolbarButton icon={<Target16Regular />} appearance="subtle" onClick={() => setOpenForm("goals")}>
-            Goals
-          </ToolbarButton>
-          <ToolbarDivider />
-          <Switch checked={isFacilitator} onChange={(_, d) => setIsFacilitator(d.checked)} label="Facilitator view" />
-        </Toolbar>
+        {!isFacilitator ? (
+          <Toolbar aria-label="Workflow actions" className={styles.toolbar}>
+            <ToolbarButton icon={<Add16Regular />} appearance="subtle" onClick={() => setOpenForm("role")}>
+              Role definition
+            </ToolbarButton>
+            <ToolbarDivider />
+            <ToolbarButton icon={<PeopleCommunity16Regular />} appearance="subtle" onClick={() => setOpenForm("collaborators")}>
+              Collaborators & tasks
+            </ToolbarButton>
+            <ToolbarDivider />
+            <ToolbarButton icon={<Add16Regular />} appearance="subtle" onClick={() => setOpenForm("solo")}>
+              Non-collab tasks
+            </ToolbarButton>
+            <ToolbarDivider />
+            <ToolbarButton icon={<Toolbox16Regular />} appearance="subtle" onClick={() => setOpenForm("tools")}>
+              Tools
+            </ToolbarButton>
+            <ToolbarDivider />
+            <ToolbarButton icon={<Target16Regular />} appearance="subtle" onClick={() => setOpenForm("goals")}>
+              Goals
+            </ToolbarButton>
+            <ToolbarDivider />
+            <Switch checked={isFacilitator} onChange={(_, d) => setIsFacilitator(d.checked)} label="Facilitator view" />
+          </Toolbar>
+        ) : (
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: tokens.spacingVerticalS }}>
+            <Switch checked={isFacilitator} onChange={(_, d) => setIsFacilitator(d.checked)} label="Facilitator view" />
+          </div>
+        )}
         {isFacilitator ? (
-          <div className={styles.rowTwo}>
-            <Card>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(420px, 1fr))", gap: tokens.spacingHorizontalL }}>
+            <Card style={{ height: "100%" }}>
               
               <div className={styles.stack}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: tokens.spacingHorizontalM, alignItems: "center" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: tokens.spacingHorizontalM, alignItems: "flex-start" }}>
                   <div>
-                    <Title3>{roleName || "Role not set"}</Title3><br />
+                    <Title3>{roleName || "Role not set"}</Title3>
+                    <br />
                     <Text size={200}>Headcount: {headcount || "—"}</Text>
                   </div>
-                  <br />
                   <Text size={200} className={styles.muted} style={{ maxWidth: "320px" }}>
                     {description || "No description yet."}
                   </Text>
