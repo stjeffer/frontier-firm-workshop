@@ -19,13 +19,18 @@ import {
   Combobox,
   Option,
   Slider,
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableCell,
-  TableHeaderCell,
-  Switch
+  Switch,
+  DataGrid,
+  DataGridHeader,
+  DataGridBody,
+  DataGridRow,
+  DataGridCell,
+  DataGridHeaderCell,
+  createTableColumn,
+  Menu,
+  MenuTrigger,
+  MenuPopover,
+  MenuList
 } from "@fluentui/react-components";
 import { Delete16Regular, Add16Regular, CalendarClock24Regular } from "@fluentui/react-icons";
 
@@ -157,7 +162,7 @@ const useStyles = makeStyles({
   painPane: {
     flex: 1,
     minWidth: "320px",
-    maxWidth: "420px",
+    maxWidth: "560px",
     display: "flex",
     flexDirection: "column",
     gap: tokens.spacingVerticalS
@@ -628,11 +633,11 @@ const App = () => {
     description: ""
   });
   const [diagramExpanded, setDiagramExpanded] = useState(false);
-  const [painSort, setPainSort] = useState({ column: "severity", direction: "desc" });
   const [nodePositions, setNodePositions] = useState({});
   const [painOverlayPos, setPainOverlayPos] = useState({ x: null, y: null });
   const [painOverlayDragging, setPainOverlayDragging] = useState(false);
   const [painOverlayWide, setPainOverlayWide] = useState(false);
+  const [painMenuOpen, setPainMenuOpen] = useState(false);
   const diagramRef = useRef(null);
 
   const summary = useMemo(() => ({
@@ -718,29 +723,17 @@ const App = () => {
     return Array.from(set);
   }, [collaborators]);
 
-  const sortedPainPoints = useMemo(() => {
-    const sorted = [...painPoints];
-    sorted.sort((a, b) => {
-      const dir = painSort.direction === "asc" ? 1 : -1;
-      if (painSort.column === "severity") return dir * (a.severity - b.severity);
-      if (painSort.column === "delay") return dir * (a.delay || "").localeCompare(b.delay || "");
-      if (painSort.column === "cost") return dir * (a.cost || "").localeCompare(b.cost || "");
-      return dir * a.title.localeCompare(b.title);
-    });
-    return sorted;
-  }, [painPoints, painSort]);
-
   const painRows = useMemo(
     () =>
-      sortedPainPoints.map((p, idx) => ({
+      painPoints.map((p, idx) => ({
         id: idx,
         task: p.task || p.title || "—",
         severity: p.severity,
         delay: p.delay || "—",
         cost: p.cost || "—",
         why: p.description || "—"
-    })),
-    [sortedPainPoints]
+      })),
+    [painPoints]
   );
 
   const removePainPoint = (idx) => {
@@ -749,32 +742,37 @@ const App = () => {
 
   const painColumns = useMemo(
     () => [
-      {
+      createTableColumn({
         columnId: "task",
+        compare: (a, b) => a.task.localeCompare(b.task),
         renderHeaderCell: () => "Task",
         renderCell: (item) => truncate(item.task, 22)
-      },
-      {
+      }),
+      createTableColumn({
         columnId: "severity",
+        compare: (a, b) => a.severity - b.severity,
         renderHeaderCell: () => "Sev",
         renderCell: (item) => item.severity
-      },
-      {
+      }),
+      createTableColumn({
         columnId: "delay",
+        compare: (a, b) => (a.delay || "").localeCompare(b.delay || ""),
         renderHeaderCell: () => "Delay",
         renderCell: (item) => truncate(item.delay, 16)
-      },
-      {
+      }),
+      createTableColumn({
         columnId: "cost",
+        compare: (a, b) => (a.cost || "").localeCompare(b.cost || ""),
         renderHeaderCell: () => "Cost",
         renderCell: (item) => truncate(item.cost, 16)
-      },
-      {
+      }),
+      createTableColumn({
         columnId: "why",
+        compare: (a, b) => (a.why || "").localeCompare(b.why || ""),
         renderHeaderCell: () => "Why painful",
         renderCell: (item) => truncate(item.why, 28)
-      },
-      {
+      }),
+      createTableColumn({
         columnId: "actions",
         renderHeaderCell: () => "",
         renderCell: (item) => (
@@ -786,7 +784,7 @@ const App = () => {
             onClick={() => removePainPoint(item.id)}
           />
         )
-      }
+      })
     ],
     [removePainPoint]
   );
@@ -922,60 +920,97 @@ const App = () => {
                 <Switch checked={diagramExpanded} onChange={(_, data) => setDiagramExpanded(data.checked)} label="Expand to full screen" />
                 {diagramExpanded && (
                   <>
-                <Field label="Task (shared or not)" style={{ minWidth: "220px" }}>
-                  <Combobox
-                    placeholder="Select or type a task"
-                    freeform
-                    value={painForm.task}
-                    onOptionSelect={(_, data) =>
-                      setPainForm({
-                        ...painForm,
-                        task: data.optionValue || data.value || "",
-                        shared: false
-                      })
-                    }
-                    onChange={(_, data) => setPainForm({ ...painForm, task: data.value })}
-                  >
-                    {taskOptions.map((t) => (
-                      <Option key={t} value={t}>
-                        {t} {sharedTasksMap[t]?.length > 1 ? "(shared)" : ""}
-                      </Option>
-                    ))}
-                  </Combobox>
-                </Field>
-                <Field label={`Severity (${painForm.severity}/10)`} style={{ width: "200px" }}>
-                  <Slider
-                    min={1}
-                    max={10}
-                    step={1}
-                    value={painForm.severity}
-                    onChange={(_, data) => setPainForm({ ...painForm, severity: data.value })}
-                  />
-                </Field>
-                <Field label="Delay / time" style={{ minWidth: "140px" }}>
-                  <Input
-                    placeholder="+2 hrs"
-                    value={painForm.delay}
-                    onChange={(_, d) => setPainForm({ ...painForm, delay: d.value })}
-                  />
-                </Field>
-                <Field label="Cost / risk" style={{ minWidth: "140px" }}>
-                  <Input
-                    placeholder="$500/week"
-                    value={painForm.cost}
-                    onChange={(_, d) => setPainForm({ ...painForm, cost: d.value })}
-                  />
-                </Field>
-                <Field label="Why is it painful?" style={{ minWidth: "220px" }}>
-                  <Input
-                    placeholder="Describe the impact"
-                    value={painForm.description}
-                    onChange={(_, d) => setPainForm({ ...painForm, description: d.value })}
-                  />
-                </Field>
-                <Button appearance="primary" icon={<Add16Regular />} onClick={addPainPoint}>
-                  Add pain point
-                </Button>
+                <Menu open={painMenuOpen} onOpenChange={(_, data) => setPainMenuOpen(!!data.open)}>
+                  <MenuTrigger disableButtonEnhancement>
+                    <Button appearance="primary" icon={<Add16Regular />}>
+                      Add pain point
+                    </Button>
+                  </MenuTrigger>
+                  <MenuPopover>
+                    <MenuList aria-label="Add pain point grid" style={{ padding: tokens.spacingHorizontalM }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: tokens.spacingVerticalM,
+                          width: "250px",
+                          maxWidth: "420px"
+                        }}
+                      >
+                        <Field label="Task (shared or not)">
+                          <Combobox
+                            placeholder="Select or type a task"
+                            freeform
+                            value={painForm.task}
+                            style={{ width: "100%" }}
+                            onOptionSelect={(_, data) =>
+                              setPainForm({
+                                ...painForm,
+                                task: data.optionValue || data.value || "",
+                                shared: false
+                              })
+                            }
+                            onChange={(_, data) => setPainForm({ ...painForm, task: data.value })}
+                          >
+                            {taskOptions.map((t) => (
+                              <Option key={t} value={t}>
+                                {t} {sharedTasksMap[t]?.length > 1 ? "(shared)" : ""}
+                              </Option>
+                            ))}
+                          </Combobox>
+                        </Field>
+                        <Field label={`Severity (${painForm.severity}/10)`}>
+                          <Slider
+                            min={1}
+                            max={10}
+                            step={1}
+                            value={painForm.severity}
+                            onChange={(_, data) => setPainForm({ ...painForm, severity: data.value })}
+                          />
+                        </Field>
+                        <Field label="Delay / time">
+                          <Input
+                            placeholder="+2 hrs"
+                            value={painForm.delay}
+                            style={{ width: "100%" }}
+                            onChange={(_, d) => setPainForm({ ...painForm, delay: d.value })}
+                          />
+                        </Field>
+                        <Field label="Cost / risk">
+                          <Input
+                            placeholder="$500/week"
+                            value={painForm.cost}
+                            style={{ width: "100%" }}
+                            onChange={(_, d) => setPainForm({ ...painForm, cost: d.value })}
+                          />
+                        </Field>
+                        <Field label="Why is it painful?">
+                          <Textarea
+                            placeholder="Describe the impact"
+                            value={painForm.description}
+                            style={{ width: "100%" }}
+                            rows={3}
+                            onChange={(_, d) => setPainForm({ ...painForm, description: d.value })}
+                          />
+                        </Field>
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: tokens.spacingHorizontalS }}>
+                          <Button onClick={() => setPainMenuOpen(false)}>Cancel</Button>
+                          <Button
+                            appearance="primary"
+                            icon={<Add16Regular />}
+                            disabled={!painForm.task.trim()}
+                            onClick={() => {
+                              addPainPoint();
+                              setPainMenuOpen(false);
+                            }}
+                          >
+                            Save
+                          </Button>
+                        </div>
+                      </div>
+                    </MenuList>
+                  </MenuPopover>
+                </Menu>
                   </>
                 )}
               </div>
@@ -996,40 +1031,32 @@ const App = () => {
                   </div>
                   <div className={styles.painPane}>
                     <Subtitle2>Pain points</Subtitle2>
-                    <Table aria-label="Pain points" size="small">
-                      <TableHeader>
-                        <TableRow>
-                          {painColumns.map((col) => {
-                            const isSorted = painSort.column === col.columnId;
-                            return (
-                              <TableHeaderCell
-                                key={col.columnId}
-                                sortDirection={col.columnId === "actions" ? undefined : isSorted ? painSort.direction : undefined}
-                                onClick={() => {
-                                  if (col.columnId === "actions") return;
-                                  setPainSort((prev) =>
-                                    prev.column === col.columnId
-                                      ? { column: col.columnId, direction: prev.direction === "asc" ? "desc" : "asc" }
-                                      : { column: col.columnId, direction: col.columnId === "severity" ? "desc" : "asc" }
-                                  );
-                                }}
-                              >
-                                {col.renderHeaderCell()}
-                              </TableHeaderCell>
-                            );
-                          })}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {painRows.map((item) => (
-                          <TableRow key={item.id}>
-                            {painColumns.map((col) => (
-                              <TableCell key={col.columnId}>{col.renderCell(item)}</TableCell>
-                            ))}
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                    <DataGrid
+                      items={painRows}
+                      columns={painColumns}
+                      sortable
+                      defaultSortState={{ sortColumn: "severity", sortDirection: "descending" }}
+                      focusMode="cell"
+                      getRowId={(item) => item.id}
+                      style={{ height: "100%" }}
+                    >
+                      <DataGridHeader>
+                        <DataGridRow>
+                          {({ renderHeaderCell, columnId }) => (
+                            <DataGridHeaderCell key={columnId}>{renderHeaderCell()}</DataGridHeaderCell>
+                          )}
+                        </DataGridRow>
+                      </DataGridHeader>
+                      <DataGridBody>
+                        {({ item, rowId }) => (
+                          <DataGridRow key={rowId}>
+                            {({ renderCell, columnId }) => (
+                              <DataGridCell key={columnId}>{renderCell(item)}</DataGridCell>
+                            )}
+                          </DataGridRow>
+                        )}
+                      </DataGridBody>
+                    </DataGrid>
                   </div>
                 </div>
               ) : (
