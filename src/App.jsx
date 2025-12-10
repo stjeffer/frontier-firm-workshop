@@ -27,6 +27,7 @@ import {
   Toolbar,
   ToolbarButton,
   ToolbarDivider,
+  Badge,
   Dialog,
   DialogSurface,
   DialogBody,
@@ -79,12 +80,14 @@ const useStyles = makeStyles({
   },
   roleOverviewGrid: {
     display: "grid",
-    gridTemplateColumns: "2fr 1fr",
+    gridTemplateColumns: "minmax(260px, 1fr) 2fr",
     gap: tokens.spacingHorizontalM,
     alignItems: "end"
   },
-  roleOverviewDescription: {
-    marginTop: tokens.spacingVerticalS
+  roleOverviewLeft: {
+    display: "grid",
+    gridTemplateRows: "auto auto",
+    gap: tokens.spacingVerticalS
   },
   toolbar: {
     display: "flex",
@@ -466,6 +469,7 @@ const Diagram = React.forwardRef(
       sharedTasksMap,
       sharedToolsMap,
       painPoints,
+      soloTasks,
       nodePositions,
       setNodePositions,
       expanded
@@ -763,6 +767,48 @@ const Diagram = React.forwardRef(
             </g>
           </g>
         ))}
+
+        {soloTasks?.length ? (
+          <g transform={`translate(${centerX - roleWidth / 2}, ${centerY + roleHeight / 2 + 18})`}>
+            <text x={roleWidth / 2} y={0} textAnchor="middle" fontSize="12" fill={tokens.colorNeutralForeground2}>
+              Individual tasks
+            </text>
+            <g transform={`translate(${roleWidth / 2}, 10)`}>
+              {(() => {
+                const badgeHeight = 18;
+                const gap = 8;
+                const totalHeight = soloTasks.length * badgeHeight + (soloTasks.length - 1) * gap;
+                const startY = -totalHeight / 2;
+                return soloTasks.map((task, idx) => {
+                  const y = startY + idx * (badgeHeight + gap);
+                  return (
+                    <g key={`solo-${idx}`} transform={`translate(-40, ${y})`}>
+                      <rect
+                        x={0}
+                        y={-badgeHeight / 2}
+                        width={80}
+                        height={badgeHeight}
+                        rx="9"
+                        fill={tokens.colorNeutralBackground3}
+                        stroke={tokens.colorBrandStroke1}
+                      />
+                      <text
+                        x={40}
+                        y={2}
+                        fontSize="11"
+                        textAnchor="middle"
+                        fill={tokens.colorNeutralForeground1}
+                        fontWeight="600"
+                      >
+                        {truncate(task.title, 14)}
+                      </text>
+                    </g>
+                  );
+                });
+              })()}
+            </g>
+          </g>
+        ) : null}
       </svg>
     );
   }
@@ -952,6 +998,20 @@ const App = () => {
 
   const renderModalContent = () => {
     switch (openForm) {
+      case "role":
+        return (
+          <div className={styles.stack}>
+            <Field label="Role" required>
+              <Input placeholder="e.g., Customer Support Specialist" value={roleName} onChange={(_, d) => setRoleName(d.value)} />
+            </Field>
+            <Field label="Number of employees">
+              <Input type="number" min={0} placeholder="e.g., 15" value={headcount} onChange={(_, d) => setHeadcount(d.value)} />
+            </Field>
+            <Field label="Description">
+              <Textarea rows={3} placeholder="What does a typical day look like?" value={description} onChange={(_, d) => setDescription(d.value)} />
+            </Field>
+          </div>
+        );
       case "goals":
         return (
           <AddableList
@@ -1070,6 +1130,10 @@ const App = () => {
     <FluentProvider theme={webLightTheme}>
       <div className={styles.shell}>
         <Toolbar aria-label="Workflow actions" className={styles.toolbar}>
+          <ToolbarButton icon={<Add16Regular />} appearance="subtle" onClick={() => setOpenForm("role")}>
+            Role definition
+          </ToolbarButton>
+          <ToolbarDivider />
           <ToolbarButton icon={<PeopleCommunity16Regular />} appearance="subtle" onClick={() => setOpenForm("collaborators")}>
             Collaborators & tasks
           </ToolbarButton>
@@ -1086,26 +1150,6 @@ const App = () => {
             Goals
           </ToolbarButton>
         </Toolbar>
-        <div className={styles.rowFull}>
-          <Card>
-            <CardHeader
-              header={<Subtitle2>Role Overview</Subtitle2>}
-              description={<Text className={styles.muted}>Role basics that inform everything else.</Text>}
-            />
-            <div className={styles.roleOverviewGrid}>
-              <Field label="Role" required>
-                <Input placeholder="e.g., Customer Support Specialist" value={roleName} onChange={(_, d) => setRoleName(d.value)} />
-              </Field>
-              <Field label="Number of employees">
-                <Input type="number" min={0} placeholder="e.g., 15" value={headcount} onChange={(_, d) => setHeadcount(d.value)} />
-              </Field>
-            </div>
-            <Field label="Description" className={styles.roleOverviewDescription}>
-              <Textarea placeholder="What does a typical day look like?" value={description} onChange={(_, d) => setDescription(d.value)} />
-            </Field>
-          </Card>
-        </div>
-
         <div className={styles.rowTwo}>
           <Card>
             <CardHeader
@@ -1413,6 +1457,7 @@ const App = () => {
         <DialogSurface>
           <DialogBody>
             <DialogTitle>
+              {openForm === "role" && "Role definition"}
               {openForm === "collaborators" && "Add collaborators & shared tasks"}
               {openForm === "solo" && "Add non-collaborative task"}
               {openForm === "tools" && "Add tools"}
