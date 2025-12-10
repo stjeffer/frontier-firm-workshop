@@ -705,12 +705,22 @@ const Diagram = React.forwardRef(
                 const xCenter = centerX + side * offsetX;
                 const x = xCenter - (side === 1 ? 0 : width);
                 const textAnchor = side === 1 ? "start" : "end";
+                const visual = getPainVisual(painPoints, task.title);
                 return (
                   <g
                     key={`solo-${idx}`}
                     onClick={() => onTaskSelect?.(task.title)}
                     style={{ cursor: "pointer", pointerEvents: "all" }}
                   >
+                    <rect
+                      x={x}
+                      y={y - badgeHeight / 2}
+                      width={width}
+                      height={badgeHeight}
+                      rx={badgeHeight / 2}
+                      fill="transparent"
+                      pointerEvents="all"
+                    />
                     <line
                       x1={centerX}
                       y1={centerY}
@@ -729,9 +739,9 @@ const Diagram = React.forwardRef(
                       height={badgeHeight}
                       rx={badgeHeight / 2}
                       fill={tokens.colorNeutralBackground1}
-                      stroke={tokens.colorBrandStroke1}
-                      strokeWidth="1.5"
-                      pointerEvents="all"
+                      stroke={visual.stroke}
+                      strokeWidth="2"
+                      pointerEvents="none"
                     />
                     <rect
                       x={x + 2}
@@ -739,7 +749,7 @@ const Diagram = React.forwardRef(
                       width={width - 4}
                       height={badgeHeight - 4}
                       rx={badgeHeight / 2}
-                      fill={tokens.colorBrandBackground}
+                      fill={visual.color}
                       opacity="0.08"
                       pointerEvents="none"
                     />
@@ -760,16 +770,6 @@ const Diagram = React.forwardRef(
             </g>
           );
         })() : null}
-
-        <rect
-          x={centerX - roleWidth / 2 - 60}
-          y={centerY - roleHeight / 2 - 60}
-          width={roleWidth + 120}
-          height={roleHeight + 120}
-          fill={tokens.colorNeutralBackground1}
-          rx="28"
-          style={{ pointerEvents: "none" }}
-        />
 
         <g
           transform={`translate(${centerX - roleWidth / 2}, ${centerY - roleHeight / 2})`}
