@@ -729,6 +729,8 @@ const App = () => {
   const [description, setDescription] = useState("");
   const [goals, setGoals] = useState([]);
   const [tools, setTools] = useState([]);
+  const [soloTaskInput, setSoloTaskInput] = useState({ title: "", frequency: "weekly" });
+  const [soloTasks, setSoloTasks] = useState([]);
   const [collaborators, setCollaborators] = useState([]);
   const [collabName, setCollabName] = useState("");
   const [painPoints, setPainPoints] = useState([]);
@@ -797,6 +799,17 @@ const App = () => {
       if (i !== collabIdx) return c;
       return { ...c, tools: (c.tools || []).filter((_, tIdx) => tIdx !== toolIdx) };
     }));
+  };
+
+  const addSoloTask = () => {
+    const title = soloTaskInput.title.trim();
+    if (!title) return;
+    setSoloTasks([...soloTasks, { title, frequency: soloTaskInput.frequency || "weekly" }]);
+    setSoloTaskInput({ title: "", frequency: soloTaskInput.frequency || "weekly" });
+  };
+
+  const removeSoloTask = (idx) => {
+    setSoloTasks(soloTasks.filter((_, i) => i !== idx));
   };
 
   const sharedTasksMap = useMemo(() => {
@@ -921,6 +934,54 @@ const App = () => {
               onAdd={(v) => setGoals([...goals, v])}
               onRemove={(idx) => setGoals(goals.filter((_, i) => i !== idx))}
             />
+          </Card>
+
+          <Card>
+            <CardHeader
+              header={<Subtitle2>Individual (non-collaborative) tasks</Subtitle2>}
+              description={<Text className={styles.muted}>Repetitive tasks owned by this role only.</Text>}
+            />
+            <Field label="Task">
+              <div style={{ display: "flex", gap: tokens.spacingHorizontalXS, alignItems: "center" }}>
+                <Input
+                  placeholder="e.g., Daily reconciliations"
+                  value={soloTaskInput.title}
+                  onChange={(_, d) => setSoloTaskInput({ ...soloTaskInput, title: d.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addSoloTask();
+                    }
+                  }}
+                />
+                <Combobox
+                  style={{ width: "140px" }}
+                  value={soloTaskInput.frequency}
+                  onOptionSelect={(_, data) =>
+                    setSoloTaskInput({ ...soloTaskInput, frequency: data.optionValue || data.value || "weekly" })
+                  }
+                  onChange={(_, d) => setSoloTaskInput({ ...soloTaskInput, frequency: d.value })}
+                >
+                  {["daily", "weekly", "monthly", "adhoc"].map((f) => (
+                    <Option key={f} value={f}>
+                      {f}
+                    </Option>
+                  ))}
+                </Combobox>
+                <Button appearance="primary" icon={<Add16Regular />} onClick={addSoloTask}>
+                  Add
+                </Button>
+              </div>
+            </Field>
+            <TagGroup aria-label="Individual tasks" style={{ marginTop: tokens.spacingVerticalS, flexWrap: "wrap" }}>
+              {soloTasks.length === 0 && <Text className={styles.muted}>No individual tasks yet.</Text>}
+              {soloTasks.map((t, idx) => (
+                <Tag key={`${t.title}-${idx}`} dismissible onDismiss={() => removeSoloTask(idx)} shape="rounded" appearance="outline">
+                  <span style={{ fontWeight: 600 }}>{t.title}</span>&nbsp;
+                  <Text size={200} color="neutral">{`(${t.frequency})`}</Text>
+                </Tag>
+              ))}
+            </TagGroup>
           </Card>
 
           <Card>
