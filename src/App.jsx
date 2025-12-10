@@ -161,8 +161,8 @@ const useStyles = makeStyles({
   },
   painPane: {
     flex: 1,
-    minWidth: "320px",
-    maxWidth: "560px",
+    minWidth: "700px",
+    maxWidth: "750px",
     display: "flex",
     flexDirection: "column",
     gap: tokens.spacingVerticalS
@@ -191,6 +191,28 @@ const initials = (name) => {
 const truncate = (str, max = 22) => {
   if (!str) return "";
   return str.length > max ? `${str.slice(0, max - 1)}…` : str;
+};
+
+const severityLabel = {
+  1: "Mild inconvenience",
+  2: "Noticeable friction",
+  3: "Material delay or cost",
+  4: "High business impact",
+  5: "Critical issue / repeated failure"
+};
+
+const occurrencesByFrequency = {
+  daily: { weekly: 5, monthly: 22 },
+  weekly: { weekly: 1, monthly: 4.35 },
+  monthly: { weekly: 0.25, monthly: 1 },
+  adhoc: { weekly: 0, monthly: 0 }
+};
+
+const formatMinutes = (minutes) => {
+  if (!minutes || Number.isNaN(minutes)) return "—";
+  if (minutes < 60) return `${Math.round(minutes)} mins`;
+  const hours = minutes / 60;
+  return `${hours % 1 === 0 ? hours : hours.toFixed(1)} hrs`;
 };
 
 const AddableList = ({ label, placeholder, items, onAdd, onRemove }) => {
@@ -626,11 +648,15 @@ const App = () => {
   const [collabName, setCollabName] = useState("");
   const [painPoints, setPainPoints] = useState([]);
   const [painForm, setPainForm] = useState({
-    severity: 5,
+    severity: 3,
     delay: "",
     cost: "",
     task: "",
-    description: ""
+    description: "",
+    frequency: "weekly",
+    durationValue: "",
+    durationUnit: "minutes",
+    frictionTypes: []
   });
   const [diagramExpanded, setDiagramExpanded] = useState(false);
   const [nodePositions, setNodePositions] = useState({});
@@ -725,14 +751,25 @@ const App = () => {
 
   const painRows = useMemo(
     () =>
-      painPoints.map((p, idx) => ({
-        id: idx,
-        task: p.task || p.title || "—",
-        severity: p.severity,
-        delay: p.delay || "—",
-        cost: p.cost || "—",
-        why: p.description || "—"
-      })),
+      painPoints.map((p, idx) => {
+        const perOccMinutes = (Number(p.durationValue) || 0) * (p.durationUnit === "hours" ? 60 : 1);
+        const occ = occurrencesByFrequency[p.frequency || "weekly"] || occurrencesByFrequency.weekly;
+        const weeklyMinutes = perOccMinutes * (occ.weekly ?? 0);
+        const monthlyMinutes = perOccMinutes * (occ.monthly ?? 0);
+        return {
+          id: idx,
+          task: p.task || p.title || "—",
+          severity: p.severity,
+          frequency: p.frequency || "—",
+          delay: p.delay || "—",
+          cost: p.cost || "—",
+          why: p.description || "—",
+          duration: perOccMinutes ? `${p.durationValue} ${p.durationUnit}` : "—",
+          friction: (p.frictionTypes || []).join(", ") || "—",
+          weeklyLost: formatMinutes(weeklyMinutes),
+          monthlyLost: formatMinutes(monthlyMinutes)
+        };
+      }),
     [painPoints]
   );
 
@@ -767,6 +804,36 @@ const App = () => {
         renderCell: (item) => truncate(item.cost, 16)
       }),
       createTableColumn({
+        columnId: "frequency",
+        compare: (a, b) => (a.frequency || "").localeCompare(b.frequency || ""),
+        renderHeaderCell: () => "Frequency",
+        renderCell: (item) => item.frequency || "—"
+      }),
+      createTableColumn({
+        columnId: "duration",
+        compare: (a, b) => (a.duration || "").localeCompare(b.duration || ""),
+        renderHeaderCell: () => "Per occurrence",
+        renderCell: (item) => item.duration
+      }),
+      createTableColumn({
+        columnId: "weeklyLost",
+        compare: (a, b) => (a.weeklyLost || "").localeCompare(b.weeklyLost || ""),
+        renderHeaderCell: () => "Weekly time lost",
+        renderCell: (item) => item.weeklyLost
+      }),
+      createTableColumn({
+        columnId: "monthlyLost",
+        compare: (a, b) => (a.monthlyLost || "").localeCompare(b.monthlyLost || ""),
+        renderHeaderCell: () => "Monthly time lost",
+        renderCell: (item) => item.monthlyLost
+      }),
+      createTableColumn({
+        columnId: "friction",
+        compare: (a, b) => (a.friction || "").localeCompare(b.friction || ""),
+        renderHeaderCell: () => "Friction type",
+        renderCell: (item) => truncate(item.friction, 26)
+      }),
+      createTableColumn({
         columnId: "why",
         compare: (a, b) => (a.why || "").localeCompare(b.why || ""),
         renderHeaderCell: () => "Why painful",
@@ -793,6 +860,7 @@ const App = () => {
     const task = painForm.task.trim();
     if (!task) return;
     const severity = Number(painForm.severity) || 0;
+    const frictionTypes = Array.isArray(painForm.frictionTypes) ? painForm.frictionTypes.slice(0, 2) : [];
     setPainPoints([
       ...painPoints,
       {
@@ -801,10 +869,24 @@ const App = () => {
         delay: painForm.delay.trim(),
         cost: painForm.cost.trim(),
         task,
-        description: painForm.description.trim()
+        description: painForm.description.trim(),
+        frequency: painForm.frequency,
+        durationValue: painForm.durationValue,
+        durationUnit: painForm.durationUnit,
+        frictionTypes
       }
     ]);
-    setPainForm({ severity: 5, delay: "", cost: "", task: "", description: "" });
+    setPainForm({
+      severity: 3,
+      delay: "",
+      cost: "",
+      task: "",
+      description: "",
+      frequency: "weekly",
+      durationValue: "",
+      durationUnit: "minutes",
+      frictionTypes: []
+    });
   };
 
   const handlePainOverlayPointerDown = (e) => {
@@ -959,22 +1041,53 @@ const App = () => {
                             ))}
                           </Combobox>
                         </Field>
-                        <Field label={`Severity (${painForm.severity}/10)`}>
+                        <Field label={`Severity (${painForm.severity}/5)`} hint={severityLabel[painForm.severity]}>
                           <Slider
                             min={1}
-                            max={10}
+                            max={5}
                             step={1}
                             value={painForm.severity}
                             onChange={(_, data) => setPainForm({ ...painForm, severity: data.value })}
                           />
                         </Field>
-                        <Field label="Delay / time">
-                          <Input
-                            placeholder="+2 hrs"
-                            value={painForm.delay}
+                        <Field label="Frequency">
+                          <Combobox
+                            value={painForm.frequency}
                             style={{ width: "100%" }}
-                            onChange={(_, d) => setPainForm({ ...painForm, delay: d.value })}
-                          />
+                            onOptionSelect={(_, data) =>
+                              setPainForm({ ...painForm, frequency: data.optionValue || data.value || "weekly" })
+                            }
+                            onChange={(_, data) => setPainForm({ ...painForm, frequency: data.value })}
+                          >
+                            {["daily", "weekly", "monthly", "adhoc"].map((f) => (
+                              <Option key={f} value={f}>
+                                {f}
+                              </Option>
+                            ))}
+                          </Combobox>
+                        </Field>
+                        <Field label="Duration (per occurrence)">
+                          <div style={{ display: "flex", gap: tokens.spacingHorizontalXS }}>
+                            <Input
+                              type="number"
+                              min={0}
+                              placeholder="e.g., 30"
+                              value={painForm.durationValue}
+                              style={{ width: "100%" }}
+                              onChange={(_, d) => setPainForm({ ...painForm, durationValue: d.value })}
+                            />
+                            <Combobox
+                              value={painForm.durationUnit}
+                              style={{ width: "120px" }}
+                              onOptionSelect={(_, data) =>
+                                setPainForm({ ...painForm, durationUnit: data.optionValue || data.value || "minutes" })
+                              }
+                              onChange={(_, data) => setPainForm({ ...painForm, durationUnit: data.value })}
+                            >
+                              <Option value="minutes">minutes</Option>
+                              <Option value="hours">hours</Option>
+                            </Combobox>
+                          </div>
                         </Field>
                         <Field label="Cost / risk">
                           <Input
@@ -983,6 +1096,40 @@ const App = () => {
                             style={{ width: "100%" }}
                             onChange={(_, d) => setPainForm({ ...painForm, cost: d.value })}
                           />
+                        </Field>
+                        <Field label="Friction type (max 2)">
+                          <Combobox
+                            multiselect
+                            value={painForm.frictionTypes}
+                            style={{ width: "100%" }}
+                            onOptionSelect={(_, data) => {
+                              const option = data.optionValue || data.value;
+                              if (!option) return;
+                              setPainForm((prev) => {
+                                const current = new Set(prev.frictionTypes || []);
+                                if (current.has(option)) {
+                                  current.delete(option);
+                                } else if (current.size < 2) {
+                                  current.add(option);
+                                }
+                                return { ...prev, frictionTypes: Array.from(current) };
+                              });
+                            }}
+                          >
+                            {[
+                              "Delay (waiting for info, approvals, input)",
+                              "Rework (fixing errors, re-doing work)",
+                              "Manual effort (copy/paste, chasing info)",
+                              "Decision bottleneck (waiting for judgement)",
+                              "Handover friction (Cross-team dependencies)",
+                              "Tool mismatch (wrong or missing system)",
+                              "Compliance/ control burden (over-checking, audit steps)"
+                            ].map((f) => (
+                              <Option key={f} value={f}>
+                                {f}
+                              </Option>
+                            ))}
+                          </Combobox>
                         </Field>
                         <Field label="Why is it painful?">
                           <Textarea
@@ -993,6 +1140,24 @@ const App = () => {
                             onChange={(_, d) => setPainForm({ ...painForm, description: d.value })}
                           />
                         </Field>
+                        <div style={{ display: "flex", gap: tokens.spacingHorizontalS, justifyContent: "space-between" }}>
+                          <Text size={200}>
+                            Weekly loss:{" "}
+                            {formatMinutes(
+                              (Number(painForm.durationValue) || 0) *
+                                (painForm.durationUnit === "hours" ? 60 : 1) *
+                                (occurrencesByFrequency[painForm.frequency || "weekly"]?.weekly || 0)
+                            )}
+                          </Text>
+                          <Text size={200}>
+                            Monthly loss:{" "}
+                            {formatMinutes(
+                              (Number(painForm.durationValue) || 0) *
+                                (painForm.durationUnit === "hours" ? 60 : 1) *
+                                (occurrencesByFrequency[painForm.frequency || "weekly"]?.monthly || 0)
+                            )}
+                          </Text>
+                        </div>
                         <div style={{ display: "flex", justifyContent: "flex-end", gap: tokens.spacingHorizontalS }}>
                           <Button onClick={() => setPainMenuOpen(false)}>Cancel</Button>
                           <Button
