@@ -23,9 +23,24 @@ import {
   Menu,
   MenuTrigger,
   MenuPopover,
-  MenuList
+  MenuList,
+  Toolbar,
+  ToolbarButton,
+  Dialog,
+  DialogSurface,
+  DialogBody,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from "@fluentui/react-components";
-import { Delete16Regular, Add16Regular, CalendarClock24Regular } from "@fluentui/react-icons";
+import {
+  Delete16Regular,
+  Add16Regular,
+  CalendarClock24Regular,
+  PeopleCommunity16Regular,
+  Toolbox16Regular,
+  Target16Regular
+} from "@fluentui/react-icons";
 
 const useStyles = makeStyles({
   shell: {
@@ -69,6 +84,12 @@ const useStyles = makeStyles({
   },
   roleOverviewDescription: {
     marginTop: tokens.spacingVerticalS
+  },
+  toolbar: {
+    display: "flex",
+    gap: tokens.spacingHorizontalS,
+    alignItems: "center",
+    marginBottom: tokens.spacingVerticalS
   },
   stack: { display: "flex", flexDirection: "column", gap: tokens.spacingVerticalM },
   collaborators: { display: "flex", flexDirection: "column", gap: tokens.spacingVerticalM },
@@ -775,6 +796,7 @@ const App = () => {
   const [painOverlayDragging, setPainOverlayDragging] = useState(false);
   const [painOverlayWide, setPainOverlayWide] = useState(false);
   const [painMenuOpen, setPainMenuOpen] = useState(false);
+  const [openForm, setOpenForm] = useState(null);
   const diagramRef = useRef(null);
 
   const summary = useMemo(() => ({
@@ -927,35 +949,31 @@ const App = () => {
     window.addEventListener("pointerup", up);
   };
 
-  return (
-    <FluentProvider theme={webLightTheme}>
-      <div className={styles.shell}>
-        <div className={styles.rowFull}>
-          <Card>
-            <CardHeader
-              header={<Subtitle2>Role Overview</Subtitle2>}
-              description={<Text className={styles.muted}>Role basics that inform everything else.</Text>}
-            />
-            <div className={styles.roleOverviewGrid}>
-              <Field label="Role" required>
-                <Input placeholder="e.g., Customer Support Specialist" value={roleName} onChange={(_, d) => setRoleName(d.value)} />
-              </Field>
-              <Field label="Number of employees">
-                <Input type="number" min={0} placeholder="e.g., 15" value={headcount} onChange={(_, d) => setHeadcount(d.value)} />
-              </Field>
-            </div>
-            <Field label="Description" className={styles.roleOverviewDescription}>
-              <Textarea placeholder="What does a typical day look like?" value={description} onChange={(_, d) => setDescription(d.value)} />
-            </Field>
-          </Card>
-        </div>
-
-        <div className={styles.rowTwo}>
-          <Card>
-            <CardHeader
-              header={<Subtitle2>Individual (non-collaborative) tasks</Subtitle2>}
-              description={<Text className={styles.muted}>Repetitive tasks owned by this role only.</Text>}
-            />
+  const renderModalContent = () => {
+    switch (openForm) {
+      case "goals":
+        return (
+          <AddableList
+            label="Goal"
+            placeholder="Add a goal"
+            items={goals}
+            onAdd={(v) => setGoals([...goals, v])}
+            onRemove={(idx) => setGoals(goals.filter((_, i) => i !== idx))}
+          />
+        );
+      case "tools":
+        return (
+          <AddableList
+            label="Tool"
+            placeholder="Add a tool"
+            items={tools}
+            onAdd={(v) => setTools([...tools, v])}
+            onRemove={(idx) => setTools(tools.filter((_, i) => i !== idx))}
+          />
+        );
+      case "solo":
+        return (
+          <div className={styles.stack}>
             <Field label="Task">
               <div style={{ display: "flex", gap: tokens.spacingHorizontalXS, alignItems: "center" }}>
                 <Input
@@ -983,11 +1001,106 @@ const App = () => {
                     </Option>
                   ))}
                 </Combobox>
-                <Button appearance="primary" icon={<Add16Regular />} onClick={addSoloTask}>
+              </div>
+            </Field>
+            <TagGroup aria-label="Individual tasks" style={{ marginTop: tokens.spacingVerticalS, flexWrap: "wrap" }}>
+              {soloTasks.length === 0 && <Text className={styles.muted}>No individual tasks yet.</Text>}
+              {soloTasks.map((t, idx) => (
+                <Tag key={`${t.title}-${idx}`} dismissible onDismiss={() => removeSoloTask(idx)} shape="rounded" appearance="outline" size="medium">
+                  <span style={{ fontWeight: 600 }}>{t.title}</span>&nbsp;
+                  <Text size={200} color="neutral">{`(${t.frequency})`}</Text>
+                </Tag>
+              ))}
+            </TagGroup>
+          </div>
+        );
+      case "collaborators":
+        return (
+          <div className={styles.stack}>
+            <Field label="Collaborator">
+              <div style={{ display: "flex", gap: tokens.spacingHorizontalXS }}>
+                <Input
+                  placeholder="e.g., Product Manager"
+                  value={collabName}
+                  onChange={(_, d) => setCollabName(d.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addCollaborator();
+                    }
+                  }}
+                />
+                <Button appearance="primary" icon={<Add16Regular />} onClick={addCollaborator}>
                   Add
                 </Button>
               </div>
             </Field>
+            <div className={styles.collaborators}>
+              {collaborators.length === 0 && <Text className={styles.muted}>No collaborators yet.</Text>}
+              {collaborators.map((collab, idx) => (
+                <CollaboratorCard
+                  key={collab.name + idx}
+                  collaborator={collab}
+                  styles={styles}
+                  toolsOptions={tools}
+                  onRemove={() => removeCollaborator(idx)}
+                  onAddTask={(task) => addTaskToCollaborator(idx, task)}
+                  onRemoveTask={(taskIdx) => removeTaskFromCollaborator(idx, taskIdx)}
+                  onAddTool={(tool) => addToolToCollaborator(idx, tool)}
+                  onRemoveTool={(toolIdx) => removeToolFromCollaborator(idx, toolIdx)}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <FluentProvider theme={webLightTheme}>
+      <div className={styles.shell}>
+        <Toolbar aria-label="Workflow actions" className={styles.toolbar}>
+          <ToolbarButton icon={<PeopleCommunity16Regular />} appearance="subtle" onClick={() => setOpenForm("collaborators")}>
+            Collaborators & tasks
+          </ToolbarButton>
+          <ToolbarButton icon={<Add16Regular />} appearance="subtle" onClick={() => setOpenForm("solo")}>
+            Non-collab tasks
+          </ToolbarButton>
+          <ToolbarButton icon={<Toolbox16Regular />} appearance="subtle" onClick={() => setOpenForm("tools")}>
+            Tools
+          </ToolbarButton>
+          <ToolbarButton icon={<Target16Regular />} appearance="subtle" onClick={() => setOpenForm("goals")}>
+            Goals
+          </ToolbarButton>
+        </Toolbar>
+        <div className={styles.rowFull}>
+          <Card>
+            <CardHeader
+              header={<Subtitle2>Role Overview</Subtitle2>}
+              description={<Text className={styles.muted}>Role basics that inform everything else.</Text>}
+            />
+            <div className={styles.roleOverviewGrid}>
+              <Field label="Role" required>
+                <Input placeholder="e.g., Customer Support Specialist" value={roleName} onChange={(_, d) => setRoleName(d.value)} />
+              </Field>
+              <Field label="Number of employees">
+                <Input type="number" min={0} placeholder="e.g., 15" value={headcount} onChange={(_, d) => setHeadcount(d.value)} />
+              </Field>
+            </div>
+            <Field label="Description" className={styles.roleOverviewDescription}>
+              <Textarea placeholder="What does a typical day look like?" value={description} onChange={(_, d) => setDescription(d.value)} />
+            </Field>
+          </Card>
+        </div>
+
+        <div className={styles.rowTwo}>
+          <Card>
+            <CardHeader
+              header={<Subtitle2>Individual (non-collaborative) tasks</Subtitle2>}
+              description={<Text className={styles.muted}>Repetitive tasks owned by this role only.</Text>}
+            />
             <TagGroup aria-label="Individual tasks" style={{ marginTop: tokens.spacingVerticalS, flexWrap: "wrap" }}>
               {soloTasks.length === 0 && <Text className={styles.muted}>No individual tasks yet.</Text>}
               {soloTasks.map((t, idx) => (
@@ -1001,66 +1114,46 @@ const App = () => {
 
           <Card>
             <CardHeader header={<Subtitle2>Tools</Subtitle2>} description={<Text className={styles.muted}>Systems and instruments.</Text>} />
-            <AddableList
-              label="Tool"
-              placeholder="Add a tool"
-              items={tools}
-              onAdd={(v) => setTools([...tools, v])}
-              onRemove={(idx) => setTools(tools.filter((_, i) => i !== idx))}
-            />
+            <TagGroup aria-label="Tools" style={{ marginTop: tokens.spacingVerticalS, flexWrap: "wrap" }}>
+              {tools.length === 0 && <Text className={styles.muted}>No tools yet.</Text>}
+              {tools.map((tool, idx) => (
+                <Tag key={`${tool}-${idx}`} dismissible onDismiss={() => setTools(tools.filter((_, i) => i !== idx))} shape="rounded" appearance="outline" size="medium">
+                  {tool}
+                </Tag>
+              ))}
+            </TagGroup>
           </Card>
         </div>
 
         <div className={styles.rowThree}>
           <Card>
             <CardHeader header={<Subtitle2>Collaborators & Tasks</Subtitle2>} description={<Text className={styles.muted}>Link collaborators to this role and map shared tasks.</Text>} />
-            <div className={styles.stack}>
-              <Field label="Collaborator">
-                <div style={{ display: "flex", gap: tokens.spacingHorizontalXS }}>
-                  <Input
-                    placeholder="e.g., Product Manager"
-                    value={collabName}
-                    onChange={(_, d) => setCollabName(d.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addCollaborator();
-                      }
-                    }}
-                  />
-                  <Button appearance="primary" icon={<Add16Regular />} onClick={addCollaborator}>
-                    Add
-                  </Button>
-                </div>
-              </Field>
-              <div className={styles.collaborators}>
-                {collaborators.length === 0 && <Text className={styles.muted}>No collaborators yet. Add one to define shared tasks.</Text>}
-                {collaborators.map((collab, idx) => (
-                  <CollaboratorCard
-                    key={collab.name + idx}
-                    collaborator={collab}
-                    styles={styles}
-                    toolsOptions={tools}
-                    onRemove={() => removeCollaborator(idx)}
-                    onAddTask={(task) => addTaskToCollaborator(idx, task)}
-                    onRemoveTask={(taskIdx) => removeTaskFromCollaborator(idx, taskIdx)}
-                    onAddTool={(tool) => addToolToCollaborator(idx, tool)}
-                    onRemoveTool={(toolIdx) => removeToolFromCollaborator(idx, toolIdx)}
-                  />
-                ))}
-              </div>
+            <div className={styles.collaborators}>
+              {collaborators.length === 0 && <Text className={styles.muted}>No collaborators yet. Add one via the toolbar.</Text>}
+              {collaborators.map((collab, idx) => (
+                <Card key={collab.name + idx} className={styles.collaboratorBlock}>
+                  <div className={styles.collaboratorHeader}>
+                    <Subtitle2>{collab.name}</Subtitle2>
+                    <Button appearance="subtle" icon={<Delete16Regular />} aria-label="Remove" onClick={() => removeCollaborator(idx)} />
+                  </div>
+                  <Text size={200} className={styles.muted}>
+                    Tasks: {collab.tasks.length || 0} • Tools: {collab.tools?.length || 0}
+                  </Text>
+                </Card>
+              ))}
             </div>
           </Card>
 
           <Card>
             <CardHeader header={<Subtitle2>Goals</Subtitle2>} description={<Text className={styles.muted}>Desired outcomes.</Text>} />
-            <AddableList
-              label="Goal"
-              placeholder="Add a goal"
-              items={goals}
-              onAdd={(v) => setGoals([...goals, v])}
-              onRemove={(idx) => setGoals(goals.filter((_, i) => i !== idx))}
-            />
+            <TagGroup aria-label="Goals" style={{ marginTop: tokens.spacingVerticalS, flexWrap: "wrap" }}>
+              {goals.length === 0 && <Text className={styles.muted}>No goals yet.</Text>}
+              {goals.map((goal, idx) => (
+                <Tag key={`${goal}-${idx}`} dismissible onDismiss={() => setGoals(goals.filter((_, i) => i !== idx))} shape="rounded" appearance="outline" size="medium">
+                  {goal}
+                </Tag>
+              ))}
+            </TagGroup>
           </Card>
         </div>
 
@@ -1289,6 +1382,24 @@ const App = () => {
           </Card>
         </div>
       </div>
+      <Dialog open={!!openForm} onOpenChange={(_, data) => setOpenForm(data.open ? openForm : null)}>
+        <DialogSurface>
+          <DialogBody>
+            <DialogTitle>
+              {openForm === "collaborators" && "Add collaborators & shared tasks"}
+              {openForm === "solo" && "Add non-collaborative task"}
+              {openForm === "tools" && "Add tools"}
+              {openForm === "goals" && "Add goals"}
+            </DialogTitle>
+            <DialogContent>{renderModalContent()}</DialogContent>
+            <DialogActions>
+              <Button appearance="secondary" onClick={() => setOpenForm(null)}>
+                Close
+              </Button>
+            </DialogActions>
+          </DialogBody>
+        </DialogSurface>
+      </Dialog>
     </FluentProvider>
   );
 };
