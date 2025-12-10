@@ -26,6 +26,7 @@ import {
   MenuList,
   Toolbar,
   ToolbarButton,
+  ToolbarDivider,
   Dialog,
   DialogSurface,
   DialogBody,
@@ -1006,9 +1007,16 @@ const App = () => {
             <TagGroup aria-label="Individual tasks" style={{ marginTop: tokens.spacingVerticalS, flexWrap: "wrap" }}>
               {soloTasks.length === 0 && <Text className={styles.muted}>No individual tasks yet.</Text>}
               {soloTasks.map((t, idx) => (
-                <Tag key={`${t.title}-${idx}`} dismissible onDismiss={() => removeSoloTask(idx)} shape="rounded" appearance="outline" size="medium">
-                  <span style={{ fontWeight: 600 }}>{t.title}</span>&nbsp;
-                  <Text size={200} color="neutral">{`(${t.frequency})`}</Text>
+                <Tag
+                  key={`${t.title}-${idx}`}
+                  dismissible
+                  onDismiss={() => removeSoloTask(idx)}
+                  shape="rounded"
+                  appearance="filled"
+                  color="brand"
+                  size="medium"
+                >
+                  {`${t.title} (${t.frequency})`}
                 </Tag>
               ))}
             </TagGroup>
@@ -1065,12 +1073,15 @@ const App = () => {
           <ToolbarButton icon={<PeopleCommunity16Regular />} appearance="subtle" onClick={() => setOpenForm("collaborators")}>
             Collaborators & tasks
           </ToolbarButton>
+          <ToolbarDivider />
           <ToolbarButton icon={<Add16Regular />} appearance="subtle" onClick={() => setOpenForm("solo")}>
             Non-collab tasks
           </ToolbarButton>
+          <ToolbarDivider />
           <ToolbarButton icon={<Toolbox16Regular />} appearance="subtle" onClick={() => setOpenForm("tools")}>
             Tools
           </ToolbarButton>
+          <ToolbarDivider />
           <ToolbarButton icon={<Target16Regular />} appearance="subtle" onClick={() => setOpenForm("goals")}>
             Goals
           </ToolbarButton>
@@ -1117,7 +1128,15 @@ const App = () => {
             <TagGroup aria-label="Tools" style={{ marginTop: tokens.spacingVerticalS, flexWrap: "wrap" }}>
               {tools.length === 0 && <Text className={styles.muted}>No tools yet.</Text>}
               {tools.map((tool, idx) => (
-                <Tag key={`${tool}-${idx}`} dismissible onDismiss={() => setTools(tools.filter((_, i) => i !== idx))} shape="rounded" appearance="outline" size="medium">
+                <Tag
+                  key={`${tool}-${idx}`}
+                  dismissible
+                  onDismiss={() => setTools(tools.filter((_, i) => i !== idx))}
+                  shape="rounded"
+                  appearance="filled"
+                  color="brand"
+                  size="medium"
+                >
                   {tool}
                 </Tag>
               ))}
@@ -1149,7 +1168,15 @@ const App = () => {
             <TagGroup aria-label="Goals" style={{ marginTop: tokens.spacingVerticalS, flexWrap: "wrap" }}>
               {goals.length === 0 && <Text className={styles.muted}>No goals yet.</Text>}
               {goals.map((goal, idx) => (
-                <Tag key={`${goal}-${idx}`} dismissible onDismiss={() => setGoals(goals.filter((_, i) => i !== idx))} shape="rounded" appearance="outline" size="medium">
+                <Tag
+                  key={`${goal}-${idx}`}
+                  dismissible
+                  onDismiss={() => setGoals(goals.filter((_, i) => i !== idx))}
+                  shape="rounded"
+                  appearance="filled"
+                  color="brand"
+                  size="medium"
+                >
                   {goal}
                 </Tag>
               ))}
