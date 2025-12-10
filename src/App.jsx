@@ -577,9 +577,29 @@ const Diagram = React.forwardRef(
         <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
           <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="rgba(0,0,0,0.18)" />
         </filter>
+        <mask id="roleMask">
+          <rect x="0" y="0" width={width} height={height} fill="white" />
+          <rect
+            x={centerX - roleWidth / 2}
+            y={centerY - roleHeight / 2}
+            width={roleWidth}
+            height={roleHeight}
+            fill="black"
+          />
+        </mask>
+        <mask id="soloMask">
+          <rect x="0" y="0" width={width} height={height} fill="white" />
+          <rect
+            x={centerX - roleWidth / 2}
+            y={centerY - roleHeight / 2}
+            width={roleWidth}
+            height={roleHeight}
+            fill="black"
+          />
+        </mask>
       </defs>
 
-        <g>
+        <g mask="url(#roleMask)">
       {nodes.map((node, idx) => {
         const midX = (centerX + node.x) / 2;
         const midY = (centerY + node.y) / 2;
@@ -589,14 +609,14 @@ const Diagram = React.forwardRef(
         const ctrlY = midY + curveOffset * Math.sin(angle + Math.PI / 2);
         const tasksList = node.tasks || [];
         return (
-          <g key={`conn-${node.name}-${idx}`}>
-            <path
-              d={`M ${centerX} ${centerY} Q ${ctrlX} ${ctrlY} ${node.x} ${node.y}`}
-              fill="none"
-              stroke={tokens.colorNeutralStroke2}
-              strokeWidth="2.5"
+            <g key={`conn-${node.name}-${idx}`}>
+              <path
+                d={`M ${centerX} ${centerY} Q ${ctrlX} ${ctrlY} ${node.x} ${node.y}`}
+                fill="none"
+                stroke={tokens.colorNeutralStroke2}
+                strokeWidth="2.5"
               strokeDasharray="6 4"
-              opacity="0.18"
+              opacity="0.35"
               style={{ pointerEvents: "none" }}
             />
             {tasksList.length > 0 && (() => {
@@ -664,7 +684,7 @@ const Diagram = React.forwardRef(
           const startY = centerY - totalHeight / 2;
           const side = 1;
           return (
-            <g>
+            <g mask="url(#soloMask)">
               <text
                 x={centerX + side * (offsetX + 30)}
                 y={startY - 18}
@@ -682,7 +702,7 @@ const Diagram = React.forwardRef(
                 const x = xCenter - (side === 1 ? 0 : width);
                 const textAnchor = side === 1 ? "start" : "end";
                 return (
-                  <g key={`solo-${idx}`} onClick={() => onTaskSelect?.(task.title)} style={{ cursor: "pointer" }}>
+                  <g key={`solo-${idx}`} onClick={() => onTaskSelect?.(task.title)} style={{ cursor: "pointer", pointerEvents: "all" }}>
                     <line
                       x1={centerX}
                       y1={centerY}
@@ -691,7 +711,7 @@ const Diagram = React.forwardRef(
                       stroke={tokens.colorNeutralStroke2}
                       strokeWidth="1.5"
                       strokeDasharray="4 3"
-                      opacity="0.18"
+                      opacity="0.35"
                       style={{ pointerEvents: "none" }}
                     />
                     <rect
@@ -703,6 +723,7 @@ const Diagram = React.forwardRef(
                       fill={tokens.colorNeutralBackground1}
                       stroke={tokens.colorBrandStroke1}
                       strokeWidth="1.5"
+                      onClick={() => onTaskSelect?.(task.title)}
                     />
                     <text
                       x={x + (side === 1 ? 12 : width - 12)}
@@ -711,6 +732,7 @@ const Diagram = React.forwardRef(
                       fontSize="12"
                       fill={tokens.colorNeutralForeground1}
                       fontWeight="700"
+                      onClick={() => onTaskSelect?.(task.title)}
                     >
                       {label}
                     </text>
@@ -722,12 +744,13 @@ const Diagram = React.forwardRef(
         })() : null}
 
         <rect
-          x={centerX - roleWidth / 2 - 4}
-          y={centerY - roleHeight / 2 - 4}
-          width={roleWidth + 8}
-          height={roleHeight + 8}
+          x={centerX - roleWidth / 2 - 10}
+          y={centerY - roleHeight / 2 - 10}
+          width={roleWidth + 20}
+          height={roleHeight + 20}
           fill={tokens.colorNeutralBackground1}
-          rx="18"
+          rx="20"
+          style={{ pointerEvents: "none" }}
         />
 
         <g
@@ -853,7 +876,7 @@ const Diagram = React.forwardRef(
           const startY = centerY - totalHeight / 2;
           const side = 1; // to the right; flip to -1 for left
           return (
-            <g>
+            <g mask="url(#roleMask)">
               <text
                 x={centerX + side * (offsetX + 30)}
                 y={startY - 18}
