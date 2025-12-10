@@ -633,7 +633,11 @@ const Diagram = React.forwardRef(
                     const x = midX - width / 2;
                     const y = startY + i * (pillHeight + gapY);
                     return (
-                      <g key={`${node.name}-pill-${i}`} onClick={() => onTaskSelect?.(task)} style={{ cursor: "pointer" }}>
+                      <g
+                        key={`${node.name}-pill-${i}`}
+                        onClick={() => onTaskSelect?.(task)}
+                        style={{ cursor: "pointer" }}
+                      >
                         <rect
                           x={x}
                           y={y - pillHeight / 2}
@@ -707,15 +711,6 @@ const Diagram = React.forwardRef(
                     onClick={() => onTaskSelect?.(task.title)}
                     style={{ cursor: "pointer", pointerEvents: "all" }}
                   >
-                    <rect
-                      x={x - 10}
-                      y={y - badgeHeight / 2 - 6}
-                      width={width + 20}
-                      height={badgeHeight + 12}
-                      fill="transparent"
-                      pointerEvents="all"
-                      onClick={() => onTaskSelect?.(task.title)}
-                    />
                     <line
                       x1={centerX}
                       y1={centerY}
@@ -726,7 +721,6 @@ const Diagram = React.forwardRef(
                       strokeDasharray="4 3"
                       opacity="0.35"
                       style={{ pointerEvents: "none" }}
-                      pointerEvents="none"
                     />
                     <rect
                       x={x}
@@ -738,7 +732,16 @@ const Diagram = React.forwardRef(
                       stroke={tokens.colorBrandStroke1}
                       strokeWidth="1.5"
                       pointerEvents="all"
-                      onClick={() => onTaskSelect?.(task.title)}
+                    />
+                    <rect
+                      x={x + 2}
+                      y={y - badgeHeight / 2 + 2}
+                      width={width - 4}
+                      height={badgeHeight - 4}
+                      rx={badgeHeight / 2}
+                      fill={tokens.colorBrandBackground}
+                      opacity="0.08"
+                      pointerEvents="none"
                     />
                     <text
                       x={x + (side === 1 ? 12 : width - 12)}
