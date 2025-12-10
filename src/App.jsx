@@ -1066,83 +1066,21 @@ const App = () => {
                     </MenuList>
                   </MenuPopover>
                 </Menu>
+                
                   </>
                 )}
               </div>
-              {diagramExpanded ? (
-                <div className={styles.visualSplit}>
-                  <div className={styles.visualPane}>
-                    <Diagram
-                      roleName={roleName || "Role"}
-                      collaborators={collaborators}
-                      sharedTasksMap={sharedTasksMap}
-                      sharedToolsMap={sharedToolsMap}
-                      painPoints={painPoints}
-                      expanded={diagramExpanded}
-                      nodePositions={nodePositions}
-                      setNodePositions={setNodePositions}
-                      ref={diagramRef}
-                    />
-                  </div>
-                  <div className={styles.painPane}>
-                    <Subtitle2>Pain points</Subtitle2>
-                    {painPoints.length === 0 && <Text className={styles.muted}>No pain points added yet.</Text>}
-                    <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalS }}>
-                      {painPoints.map((p, idx) => {
-                        const perOccMinutes = (Number(p.durationValue) || 0) * (p.durationUnit === "hours" ? 60 : 1);
-                        const occ = occurrencesByFrequency[p.frequency || "weekly"] || occurrencesByFrequency.weekly;
-                        const weeklyMinutes = perOccMinutes * (occ.weekly ?? 0);
-                        const monthlyMinutes = perOccMinutes * (occ.monthly ?? 0);
-                        return (
-                          <Card key={`pain-${idx}`} appearance="filled" style={{ boxShadow: tokens.shadow8 }}>
-                            <CardHeader
-                              header={
-                                <div style={{ display: "flex", alignItems: "center", gap: tokens.spacingHorizontalS }}>
-                                  <Text weight="semibold">{truncate(p.task || "Task", 30)}</Text>
-                                  <Tag shape="circular" appearance="outline">
-                                    Sev {p.severity}/5
-                                  </Tag>
-                                </div>
-                              }
-                              description={severityLabel[p.severity] || ""}
-                              action={
-                                <Button
-                                  appearance="subtle"
-                                  icon={<Delete16Regular />}
-                                  aria-label="Delete pain point"
-                                  onClick={() => removePainPoint(idx)}
-                                />
-                              }
-                            />
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: tokens.spacingHorizontalS, padding: tokens.spacingHorizontalM }}>
-                              <Text size={200}>Frequency: {p.frequency || "—"}</Text>
-                              <Text size={200}>Per occurrence: {p.durationValue ? `${p.durationValue} ${p.durationUnit}` : "—"}</Text>
-                              <Text size={200}>Weekly loss: {formatMinutes(weeklyMinutes)}</Text>
-                              <Text size={200}>Monthly loss: {formatMinutes(monthlyMinutes)}</Text>
-                              <Text size={200}>Cost/risk: {p.cost || "—"}</Text>
-                              <Text size={200}>Friction: {(p.frictionTypes || []).join(", ") || "—"}</Text>
-                              <Text size={200}>Delay/time: {p.delay || "—"}</Text>
-                              <Text size={200} block>Why: {p.description || "—"}</Text>
-                            </div>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <Diagram
-                  roleName={roleName || "Role"}
-                  collaborators={collaborators}
-                  sharedTasksMap={sharedTasksMap}
-                  sharedToolsMap={sharedToolsMap}
-                  painPoints={painPoints}
-                  expanded={diagramExpanded}
-                  nodePositions={nodePositions}
-                  setNodePositions={setNodePositions}
-                  ref={diagramRef}
-                />
-              )}
+              <Diagram
+                roleName={roleName || "Role"}
+                collaborators={collaborators}
+                sharedTasksMap={sharedTasksMap}
+                sharedToolsMap={sharedToolsMap}
+                painPoints={painPoints}
+                expanded={diagramExpanded}
+                nodePositions={nodePositions}
+                setNodePositions={setNodePositions}
+                ref={diagramRef}
+              />
               <div className={styles.stack} style={{ marginTop: tokens.spacingVerticalM }}>
                 <Divider />
                 <div style={{ display: "grid", gap: tokens.spacingHorizontalM, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
