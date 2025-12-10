@@ -844,6 +844,7 @@ const App = () => {
   const [painOverlayWide, setPainOverlayWide] = useState(false);
   const [painMenuOpen, setPainMenuOpen] = useState(false);
   const [openForm, setOpenForm] = useState(null);
+  const [isFacilitator, setIsFacilitator] = useState(false);
   const diagramRef = useRef(null);
 
   const summary = useMemo(() => ({
@@ -994,6 +995,26 @@ const App = () => {
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
+  };
+
+  const collaborativePainPoints = useMemo(
+    () => painPoints.filter((p) => (sharedTasksMap[p.task || p.title] || []).length > 0),
+    [painPoints, sharedTasksMap]
+  );
+  const isolatedPainPoints = useMemo(
+    () => painPoints.filter((p) => (sharedTasksMap[p.task || p.title] || []).length === 0),
+    [painPoints, sharedTasksMap]
+  );
+
+  const renderPainBadge = (p, collaboratorsList = []) => {
+    const severityColor = p.severity >= 4 ? "danger" : p.severity >= 3 ? "warning" : "brand";
+    const collaboratorText = collaboratorsList.length ? ` • with ${collaboratorsList.join(", ")}` : "";
+    return (
+      <Badge appearance="filled" color={severityColor} shape="rounded" size="medium" key={`${p.task || p.title}-${collaboratorText}`}>
+        {p.task || p.title}
+        {collaboratorText}
+      </Badge>
+    );
   };
 
   const renderModalContent = () => {
@@ -1149,7 +1170,49 @@ const App = () => {
           <ToolbarButton icon={<Target16Regular />} appearance="subtle" onClick={() => setOpenForm("goals")}>
             Goals
           </ToolbarButton>
+          <ToolbarDivider />
+          <Switch checked={isFacilitator} onChange={(_, d) => setIsFacilitator(d.checked)} label="Facilitator view" />
         </Toolbar>
+        {isFacilitator ? (
+          <div className={styles.rowTwo}>
+            <Card>
+              
+              <div className={styles.stack}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: tokens.spacingHorizontalM, alignItems: "center" }}>
+                  <div>
+                    <Title3>{roleName || "Role not set"}</Title3><br />
+                    <Text size={200}>Headcount: {headcount || "—"}</Text>
+                  </div>
+                  <br />
+                  <Text size={200} className={styles.muted} style={{ maxWidth: "320px" }}>
+                    {description || "No description yet."}
+                  </Text>
+                </div>
+                <Divider />
+                <div className={styles.stack}>
+                  <Text weight="semibold">Isolated pain points</Text>
+                  <div style={{ display: "flex", gap: tokens.spacingHorizontalS, flexWrap: "wrap" }}>
+                    {isolatedPainPoints.length === 0 && <Text className={styles.muted}>None captured.</Text>}
+                    {isolatedPainPoints.map((p, idx) => (
+                      <React.Fragment key={`iso-${idx}`}>{renderPainBadge(p)}</React.Fragment>
+                    ))}
+                  </div>
+                  <Text weight="semibold" style={{ marginTop: tokens.spacingVerticalS }}>
+                    Collaborative pain points
+                  </Text>
+                  <div style={{ display: "flex", gap: tokens.spacingHorizontalS, flexWrap: "wrap" }}>
+                    {collaborativePainPoints.length === 0 && <Text className={styles.muted}>None captured.</Text>}
+                    {collaborativePainPoints.map((p, idx) => {
+                      const collabs = sharedTasksMap[p.task || p.title] || [];
+                      return <React.Fragment key={`collab-${idx}`}>{renderPainBadge(p, collabs)}</React.Fragment>;
+                    })}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        ) : (
+          <>
         <div className={styles.rowTwo}>
           <Card>
             <CardHeader
@@ -1425,6 +1488,7 @@ const App = () => {
                 sharedTasksMap={sharedTasksMap}
                 sharedToolsMap={sharedToolsMap}
                 painPoints={painPoints}
+                soloTasks={soloTasks}
                 expanded={diagramExpanded}
                 nodePositions={nodePositions}
                 setNodePositions={setNodePositions}
@@ -1452,7 +1516,8 @@ const App = () => {
             </div>
           </Card>
         </div>
-      </div>
+      </>
+      )}
       <Dialog open={!!openForm} onOpenChange={(_, data) => setOpenForm(data.open ? openForm : null)}>
         <DialogSurface>
           <DialogBody>
@@ -1472,6 +1537,7 @@ const App = () => {
           </DialogBody>
         </DialogSurface>
       </Dialog>
+      </div>
     </FluentProvider>
   );
 };
