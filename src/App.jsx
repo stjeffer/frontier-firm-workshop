@@ -1182,17 +1182,19 @@ const App = () => {
         {isFacilitator ? (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(420px, 1fr))", gap: tokens.spacingHorizontalL }}>
             <Card style={{ height: "100%" }}>
-              
+              <CardHeader
+                header={<Subtitle2>Role snapshot</Subtitle2>}
+                description={<Text className={styles.muted}>Everything for this role in one place.</Text>}
+              />
               <div className={styles.stack}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: tokens.spacingHorizontalM, alignItems: "flex-start" }}>
                   <div>
                     <Title3>{roleName || "Role not set"}</Title3>
-                    <br />
                     <Text size={200}>Headcount: {headcount || "—"}</Text>
+                    <Text size={300} className={styles.muted} style={{ maxWidth: "320px" }}>
+                      {description || "No description yet."}
+                    </Text>
                   </div>
-                  <Text size={200} className={styles.muted} style={{ maxWidth: "320px" }}>
-                    {description || "No description yet."}
-                  </Text>
                 </div>
                 <Divider />
                 <div className={styles.stack}>
