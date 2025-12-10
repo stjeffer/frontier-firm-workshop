@@ -684,7 +684,7 @@ const Diagram = React.forwardRef(
           const startY = centerY - totalHeight / 2;
           const side = 1;
           return (
-            <g mask="url(#soloMask)">
+            <g mask="url(#soloMask)" style={{ pointerEvents: "all" }}>
               <text
                 x={centerX + side * (offsetX + 30)}
                 y={startY - 18}
@@ -702,7 +702,20 @@ const Diagram = React.forwardRef(
                 const x = xCenter - (side === 1 ? 0 : width);
                 const textAnchor = side === 1 ? "start" : "end";
                 return (
-                  <g key={`solo-${idx}`} onClick={() => onTaskSelect?.(task.title)} style={{ cursor: "pointer", pointerEvents: "all" }}>
+                  <g
+                    key={`solo-${idx}`}
+                    onClick={() => onTaskSelect?.(task.title)}
+                    style={{ cursor: "pointer", pointerEvents: "all" }}
+                  >
+                    <rect
+                      x={x - 10}
+                      y={y - badgeHeight / 2 - 6}
+                      width={width + 20}
+                      height={badgeHeight + 12}
+                      fill="transparent"
+                      pointerEvents="all"
+                      onClick={() => onTaskSelect?.(task.title)}
+                    />
                     <line
                       x1={centerX}
                       y1={centerY}
@@ -713,6 +726,7 @@ const Diagram = React.forwardRef(
                       strokeDasharray="4 3"
                       opacity="0.35"
                       style={{ pointerEvents: "none" }}
+                      pointerEvents="none"
                     />
                     <rect
                       x={x}
@@ -723,6 +737,7 @@ const Diagram = React.forwardRef(
                       fill={tokens.colorNeutralBackground1}
                       stroke={tokens.colorBrandStroke1}
                       strokeWidth="1.5"
+                      pointerEvents="all"
                       onClick={() => onTaskSelect?.(task.title)}
                     />
                     <text
@@ -732,7 +747,7 @@ const Diagram = React.forwardRef(
                       fontSize="12"
                       fill={tokens.colorNeutralForeground1}
                       fontWeight="700"
-                      onClick={() => onTaskSelect?.(task.title)}
+                      pointerEvents="none"
                     >
                       {label}
                     </text>
@@ -744,12 +759,12 @@ const Diagram = React.forwardRef(
         })() : null}
 
         <rect
-          x={centerX - roleWidth / 2 - 10}
-          y={centerY - roleHeight / 2 - 10}
-          width={roleWidth + 20}
-          height={roleHeight + 20}
+          x={centerX - roleWidth / 2 - 60}
+          y={centerY - roleHeight / 2 - 60}
+          width={roleWidth + 120}
+          height={roleHeight + 120}
           fill={tokens.colorNeutralBackground1}
-          rx="20"
+          rx="28"
           style={{ pointerEvents: "none" }}
         />
 
