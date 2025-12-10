@@ -578,6 +578,71 @@ const Diagram = React.forwardRef(
         </filter>
       </defs>
 
+        {soloTasks?.length ? (() => {
+          const badgeHeight = 24;
+          const gap = 12;
+          const offsetX = roleWidth / 2 + 80;
+          const totalHeight = soloTasks.length * badgeHeight + (soloTasks.length - 1) * gap;
+          const startY = centerY - totalHeight / 2;
+          const side = 1;
+          return (
+            <g>
+              <text
+                x={centerX + side * (offsetX + 30)}
+                y={startY - 18}
+                textAnchor={side === 1 ? "start" : "end"}
+                fontSize="12"
+                fill={tokens.colorNeutralForeground2}
+              >
+                Individual tasks
+              </text>
+              {soloTasks.map((task, idx) => {
+                const y = startY + idx * (badgeHeight + gap);
+                const label = task.title;
+                const width = Math.max(110, label.length * 7 + 36);
+                const xCenter = centerX + side * offsetX;
+                const x = xCenter - (side === 1 ? 0 : width);
+                const textAnchor = side === 1 ? "start" : "end";
+                return (
+                  <g key={`solo-${idx}`}>
+                    <line
+                      x1={centerX}
+                      y1={centerY}
+                      x2={xCenter}
+                      y2={y}
+                      stroke={tokens.colorNeutralStroke2}
+                      strokeWidth="1.5"
+                      strokeDasharray="4 3"
+                      opacity="0.5"
+                    />
+                    <rect
+                      x={x}
+                      y={y - badgeHeight / 2}
+                      width={width}
+                      height={badgeHeight}
+                      rx={badgeHeight / 2}
+                      fill={tokens.colorNeutralBackground1}
+                      stroke={tokens.colorBrandStroke1}
+                      strokeWidth="1.5"
+                      filter="url(#shadow)"
+                    />
+                    <text
+                      x={x + (side === 1 ? 12 : width - 12)}
+                      y={y + 4}
+                      textAnchor={textAnchor}
+                      fontSize="12"
+                      fill={tokens.colorNeutralForeground1}
+                      fontWeight="700"
+                    >
+                      {label}
+                    </text>
+                  </g>
+                );
+              })}
+            </g>
+          );
+        })() : null}
+
         <g>
       {nodes.map((node, idx) => {
         const midX = (centerX + node.x) / 2;
@@ -771,14 +836,16 @@ const Diagram = React.forwardRef(
         {soloTasks?.length ? (() => {
           const badgeHeight = 24;
           const gap = 12;
+          const offsetX = roleWidth / 2 + 80;
           const totalHeight = soloTasks.length * badgeHeight + (soloTasks.length - 1) * gap;
-          const startY = centerY + roleHeight / 2 + 60 - totalHeight / 2;
+          const startY = centerY - totalHeight / 2;
+          const side = 1; // to the right; flip to -1 for left
           return (
             <g>
               <text
-                x={centerX}
+                x={centerX + side * (offsetX + 30)}
                 y={startY - 18}
-                textAnchor="middle"
+                textAnchor={side === 1 ? "start" : "end"}
                 fontSize="12"
                 fill={tokens.colorNeutralForeground2}
               >
@@ -787,14 +854,16 @@ const Diagram = React.forwardRef(
               {soloTasks.map((task, idx) => {
                 const y = startY + idx * (badgeHeight + gap);
                 const label = task.title;
-                const width = Math.max(90, label.length * 7 + 28);
-                const x = centerX - width / 2;
+                const width = Math.max(110, label.length * 7 + 36);
+                const xCenter = centerX + side * offsetX;
+                const x = xCenter - (side === 1 ? 0 : width);
+                const textAnchor = side === 1 ? "start" : "end";
                 return (
                   <g key={`solo-${idx}`}>
                     <line
                       x1={centerX}
-                      y1={centerY + roleHeight / 2}
-                      x2={centerX}
+                      y1={centerY}
+                      x2={xCenter}
                       y2={y}
                       stroke={tokens.colorNeutralStroke2}
                       strokeWidth="1.5"
@@ -813,9 +882,9 @@ const Diagram = React.forwardRef(
                       filter="url(#shadow)"
                     />
                     <text
-                      x={centerX}
+                      x={x + (side === 1 ? 12 : width - 12)}
                       y={y + 4}
-                      textAnchor="middle"
+                      textAnchor={textAnchor}
                       fontSize="12"
                       fill={tokens.colorNeutralForeground1}
                       fontWeight="700"
