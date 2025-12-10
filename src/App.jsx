@@ -184,6 +184,18 @@ const stringToHslColor = (str) => {
   return `hsl(${h}, 70%, 55%)`;
 };
 
+const nameTone = (str) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i += 1) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const h = Math.abs(hash) % 360;
+  return {
+    primary: `hsl(${h}, 70%, 50%)`,
+    soft: `hsl(${h}, 70%, 90%)`
+  };
+};
+
 const initials = (name) => {
   if (!name) return "?";
   return name
@@ -418,12 +430,12 @@ const Diagram = React.forwardRef(
     const height = expanded ? 1100 : 360;
     const centerX = width / 2;
     const centerY = height / 2;
-    const radius = expanded ? 260 : 220;
-    const nodeWidth = expanded ? 280 : 240;
-    const nodeHeight = expanded ? 140 : 120;
-    const roleWidth = 160;
-    const roleHeight = 160;
-    const roleAvatarR = 28;
+    const radius = expanded ? 150 : 150;
+    const nodeWidth = expanded ? 150 : 150;
+    const nodeHeight = nodeWidth;
+    const roleWidth = expanded ? 150 : 150;
+    const roleHeight = roleWidth;
+    const roleAvatarR = 32;
     const nodeAvatarR = 26;
 
     const localSvgRef = useRef(null);
@@ -602,28 +614,48 @@ const Diagram = React.forwardRef(
             fill={tokens.colorNeutralBackground1}
             stroke={tokens.colorNeutralStroke2}
           />
-        <circle
-          cx={38}
-          cy={roleHeight / 2}
-          r={roleAvatarR}
-          fill={tokens.colorBrandBackground}
-          stroke={tokens.colorNeutralBackground1}
-          strokeWidth="2"
-        />
-        <text x={38} y={roleHeight / 2 + 6} textAnchor="middle" fontSize="14" fill="white" fontWeight="700">
-          {initials(roleName || "Role")}
-        </text>
-        <text
-          x={80}
-          y={roleHeight / 2}
-          fontSize="16"
-          fill={tokens.colorNeutralForeground1}
-          fontWeight="700"
-          textAnchor="start"
-          dominantBaseline="middle"
-        >
-          {truncate(roleName || "Role", 24)}
-        </text>
+          {(() => {
+            const { primary, soft } = nameTone(roleName || "Role");
+            const inset = 14;
+            const tile = roleWidth - inset * 2;
+            const avatarR = roleAvatarR;
+            return (
+              <>
+                <rect x={inset} y={inset} width={tile} height={tile} rx="12" fill={tokens.colorNeutralBackground2} />
+                <rect
+                  x={roleWidth / 2 - 46}
+                  y={inset + 10}
+                  width={92}
+                  height={92}
+                  rx="10"
+                  fill={soft}
+                  stroke={tokens.colorNeutralStroke2}
+                />
+                <circle
+                  cx={roleWidth / 2}
+                  cy={inset + 56}
+                  r={avatarR}
+                  fill={primary}
+                  stroke={tokens.colorNeutralBackground1}
+                  strokeWidth="2"
+                />
+                <text x={roleWidth / 2} y={inset + 60} textAnchor="middle" fontSize="16" fill="white" fontWeight="700">
+                  {initials(roleName || "Role")}
+                </text>
+              </>
+            );
+          })()}
+          <text
+            x={roleWidth / 2}
+            y={roleHeight - 26}
+            fontSize="18"
+            fill={tokens.colorNeutralForeground1}
+            fontWeight="700"
+            textAnchor="middle"
+            dominantBaseline="middle"
+          >
+            {truncate(roleName || "Role", 20)}
+          </text>
         </g>
 
         {nodes.map((node) => (
@@ -641,27 +673,46 @@ const Diagram = React.forwardRef(
               fill={tokens.colorNeutralBackground1}
               stroke={tokens.colorNeutralStroke2}
             />
-            <circle
-              cx={44}
-              cy={nodeHeight / 2}
-              r={nodeAvatarR}
-              fill={tokens.colorPaletteBlueBorderActive}
-              stroke={tokens.colorNeutralBackground1}
-              strokeWidth="2"
-            />
-            <text x={44} y={nodeHeight / 2 + 5} textAnchor="middle" fontSize="13" fill="white" fontWeight="700">
-              {initials(node.name)}
-            </text>
+            {(() => {
+              const { primary, soft } = nameTone(node.name);
+              const inset = 12;
+              const tile = nodeWidth - inset * 2;
+              return (
+                <>
+                  <rect x={inset} y={inset} width={tile} height={tile} rx="10" fill={tokens.colorNeutralBackground2} />
+                  <rect
+                    x={nodeWidth / 2 - 40}
+                    y={inset + 10}
+                    width={80}
+                    height={80}
+                    rx="9"
+                    fill={soft}
+                    stroke={tokens.colorNeutralStroke2}
+                  />
+                  <circle
+                    cx={nodeWidth / 2}
+                    cy={inset + 50}
+                    r={nodeAvatarR}
+                    fill={primary}
+                    stroke={tokens.colorNeutralBackground1}
+                    strokeWidth="2"
+                  />
+                  <text x={nodeWidth / 2} y={inset + 54} textAnchor="middle" fontSize="13" fill="white" fontWeight="700">
+                    {initials(node.name)}
+                  </text>
+                </>
+              );
+            })()}
             <text
-              x={90}
-              y={nodeHeight / 2 + 4}
+              x={nodeWidth / 2}
+              y={nodeHeight - 18}
               fontSize={expanded ? "16" : "15"}
               fill={tokens.colorNeutralForeground1}
               fontWeight="700"
-              textAnchor="start"
+              textAnchor="middle"
               dominantBaseline="middle"
             >
-              {truncate(node.name, expanded ? 24 : 20)}
+              {truncate(node.name, expanded ? 18 : 16)}
             </text>
             </g>
           </g>
