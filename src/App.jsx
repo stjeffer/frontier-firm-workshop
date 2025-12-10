@@ -636,7 +636,7 @@ const Diagram = React.forwardRef(
                       <g
                         key={`${node.name}-pill-${i}`}
                         onClick={() => onTaskSelect?.(task)}
-                        style={{ cursor: "pointer" }}
+                        style={{ cursor: "pointer", pointerEvents: "all" }}
                       >
                         <rect
                           x={x}
@@ -647,7 +647,7 @@ const Diagram = React.forwardRef(
                           fill={tokens.colorNeutralBackground1}
                           stroke={visual.stroke}
                           strokeWidth="2"
-                          zIndex="100"
+                          pointerEvents="all"
                         />
                         <rect
                           x={x + 2}
@@ -658,6 +658,7 @@ const Diagram = React.forwardRef(
                           fill={visual.color}
                           opacity="0.08"
                           stroke="none"
+                          pointerEvents="none"
                         />
                         <text
                           x={midX}
@@ -666,6 +667,7 @@ const Diagram = React.forwardRef(
                           fontSize="12"
                           fill={tokens.colorNeutralForeground1}
                           fontWeight="600"
+                          pointerEvents="none"
                         >
                           {text}
                         </text>
@@ -720,6 +722,7 @@ const Diagram = React.forwardRef(
                       rx={badgeHeight / 2}
                       fill="transparent"
                       pointerEvents="all"
+                      onClick={() => onTaskSelect?.(task.title)}
                     />
                     <line
                       x1={centerX}
@@ -741,7 +744,8 @@ const Diagram = React.forwardRef(
                       fill={tokens.colorNeutralBackground1}
                       stroke={visual.stroke}
                       strokeWidth="2"
-                      pointerEvents="none"
+                      pointerEvents="all"
+                      onClick={() => onTaskSelect?.(task.title)}
                     />
                     <rect
                       x={x + 2}
