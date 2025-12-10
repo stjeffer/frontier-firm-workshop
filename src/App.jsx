@@ -470,6 +470,7 @@ const Diagram = React.forwardRef(
       sharedToolsMap,
       painPoints,
       soloTasks,
+      onTaskSelect,
       nodePositions,
       setNodePositions,
       expanded
@@ -477,7 +478,7 @@ const Diagram = React.forwardRef(
     svgRef
   ) => {
     const width = 900;
-    const height = expanded ? 1100 : 360;
+    const height = 720; // keep scale consistent between compact and full screen
     const centerX = width / 2;
     const centerY = height / 2;
     const radius = expanded ? 150 : 150;
@@ -578,71 +579,6 @@ const Diagram = React.forwardRef(
         </filter>
       </defs>
 
-        {soloTasks?.length ? (() => {
-          const badgeHeight = 24;
-          const gap = 12;
-          const offsetX = roleWidth / 2 + 80;
-          const totalHeight = soloTasks.length * badgeHeight + (soloTasks.length - 1) * gap;
-          const startY = centerY - totalHeight / 2;
-          const side = 1;
-          return (
-            <g>
-              <text
-                x={centerX + side * (offsetX + 30)}
-                y={startY - 18}
-                textAnchor={side === 1 ? "start" : "end"}
-                fontSize="12"
-                fill={tokens.colorNeutralForeground2}
-              >
-                Individual tasks
-              </text>
-              {soloTasks.map((task, idx) => {
-                const y = startY + idx * (badgeHeight + gap);
-                const label = task.title;
-                const width = Math.max(110, label.length * 7 + 36);
-                const xCenter = centerX + side * offsetX;
-                const x = xCenter - (side === 1 ? 0 : width);
-                const textAnchor = side === 1 ? "start" : "end";
-                return (
-                  <g key={`solo-${idx}`}>
-                    <line
-                      x1={centerX}
-                      y1={centerY}
-                      x2={xCenter}
-                      y2={y}
-                      stroke={tokens.colorNeutralStroke2}
-                      strokeWidth="1.5"
-                      strokeDasharray="4 3"
-                      opacity="0.5"
-                    />
-                    <rect
-                      x={x}
-                      y={y - badgeHeight / 2}
-                      width={width}
-                      height={badgeHeight}
-                      rx={badgeHeight / 2}
-                      fill={tokens.colorNeutralBackground1}
-                      stroke={tokens.colorBrandStroke1}
-                      strokeWidth="1.5"
-                      filter="url(#shadow)"
-                    />
-                    <text
-                      x={x + (side === 1 ? 12 : width - 12)}
-                      y={y + 4}
-                      textAnchor={textAnchor}
-                      fontSize="12"
-                      fill={tokens.colorNeutralForeground1}
-                      fontWeight="700"
-                    >
-                      {label}
-                    </text>
-                  </g>
-                );
-              })}
-            </g>
-          );
-        })() : null}
-
         <g>
       {nodes.map((node, idx) => {
         const midX = (centerX + node.x) / 2;
@@ -660,7 +596,7 @@ const Diagram = React.forwardRef(
               stroke={tokens.colorNeutralStroke2}
               strokeWidth="2.5"
               strokeDasharray="6 4"
-              opacity="0.35"
+              opacity="0.25"
             />
             {tasksList.length > 0 && (() => {
               const pillHeight = 24;
@@ -676,7 +612,7 @@ const Diagram = React.forwardRef(
                     const x = midX - width / 2;
                     const y = startY + i * (pillHeight + gapY);
                     return (
-                      <g key={`${node.name}-pill-${i}`}>
+                      <g key={`${node.name}-pill-${i}`} onClick={() => onTaskSelect?.(task)} style={{ cursor: "pointer" }}>
                         <rect
                           x={x}
                           y={y - pillHeight / 2}
@@ -717,6 +653,70 @@ const Diagram = React.forwardRef(
         );
       })}
         </g>
+
+        {soloTasks?.length ? (() => {
+          const badgeHeight = 24;
+          const gap = 12;
+          const offsetX = roleWidth / 2 + 80;
+          const totalHeight = soloTasks.length * badgeHeight + (soloTasks.length - 1) * gap;
+          const startY = centerY - totalHeight / 2;
+          const side = 1;
+          return (
+            <g>
+              <text
+                x={centerX + side * (offsetX + 30)}
+                y={startY - 18}
+                textAnchor={side === 1 ? "start" : "end"}
+                fontSize="12"
+                fill={tokens.colorNeutralForeground2}
+              >
+                Individual tasks
+              </text>
+              {soloTasks.map((task, idx) => {
+                const y = startY + idx * (badgeHeight + gap);
+                const label = task.title;
+                const width = Math.max(110, label.length * 7 + 36);
+                const xCenter = centerX + side * offsetX;
+                const x = xCenter - (side === 1 ? 0 : width);
+                const textAnchor = side === 1 ? "start" : "end";
+                return (
+                  <g key={`solo-${idx}`} onClick={() => onTaskSelect?.(task.title)} style={{ cursor: "pointer" }}>
+                    <line
+                      x1={centerX}
+                      y1={centerY}
+                      x2={xCenter}
+                      y2={y}
+                      stroke={tokens.colorNeutralStroke2}
+                      strokeWidth="1.5"
+                      strokeDasharray="4 3"
+                      opacity="0.25"
+                    />
+                    <rect
+                      x={x}
+                      y={y - badgeHeight / 2}
+                      width={width}
+                      height={badgeHeight}
+                      rx={badgeHeight / 2}
+                      fill={tokens.colorNeutralBackground1}
+                      stroke={tokens.colorBrandStroke1}
+                      strokeWidth="1.5"
+                    />
+                    <text
+                      x={x + (side === 1 ? 12 : width - 12)}
+                      y={y + 4}
+                      textAnchor={textAnchor}
+                      fontSize="12"
+                      fill={tokens.colorNeutralForeground1}
+                      fontWeight="700"
+                    >
+                      {label}
+                    </text>
+                  </g>
+                );
+              })}
+            </g>
+          );
+        })() : null}
 
         <g
           transform={`translate(${centerX - roleWidth / 2}, ${centerY - roleHeight / 2})`}
@@ -1026,8 +1026,9 @@ const App = () => {
   const taskOptions = useMemo(() => {
     const set = new Set();
     collaborators.forEach((c) => c.tasks.forEach((t) => set.add(t)));
+    soloTasks.forEach((t) => set.add(t.title));
     return Array.from(set);
-  }, [collaborators]);
+  }, [collaborators, soloTasks]);
 
   const removePainPoint = (idx) => {
     setPainPoints(painPoints.filter((_, i) => i !== idx));
@@ -1065,6 +1066,12 @@ const App = () => {
       frictionTypes: []
     });
   };
+  const openPainForTask = (taskTitle) => {
+    const title = taskTitle || "";
+    setPainForm((prev) => ({ ...prev, task: title }));
+    setPainMenuOpen(true);
+    setDiagramExpanded(true);
+  };
 
   const handlePainOverlayPointerDown = (e) => {
     if (!diagramExpanded) return;
@@ -1093,6 +1100,26 @@ const App = () => {
     () => painPoints.filter((p) => (sharedTasksMap[p.task || p.title] || []).length === 0),
     [painPoints, sharedTasksMap]
   );
+
+  const calcPainLoss = (p) => {
+    const perOcc = (Number(p.durationValue) || 0) * (p.durationUnit === "hours" ? 60 : 1);
+    const freq = occurrencesByFrequency[p.frequency || "weekly"] || occurrencesByFrequency.weekly;
+    const weekly = perOcc * (freq.weekly ?? 0);
+    const monthly = perOcc * (freq.monthly ?? 0);
+    return { weekly, monthly };
+  };
+
+  const painSummary = useMemo(() => {
+    return painPoints.reduce(
+      (acc, p) => {
+        const { weekly, monthly } = calcPainLoss(p);
+        acc.weekly += weekly;
+        acc.monthly += monthly;
+        return acc;
+      },
+      { weekly: 0, monthly: 0 }
+    );
+  }, [painPoints]);
 
   const renderPainBadge = (p, collaboratorsList = []) => {
     const severityColor = p.severity >= 4 ? "danger" : p.severity >= 3 ? "warning" : "brand";
@@ -1244,16 +1271,16 @@ const App = () => {
               Role definition
             </ToolbarButton>
             <ToolbarDivider />
-            <ToolbarButton icon={<PeopleCommunity16Regular />} appearance="subtle" onClick={() => setOpenForm("collaborators")}>
-              Collaborators & tasks
+            <ToolbarButton icon={<Toolbox16Regular />} appearance="subtle" onClick={() => setOpenForm("tools")}>
+              Tools
             </ToolbarButton>
             <ToolbarDivider />
             <ToolbarButton icon={<Add16Regular />} appearance="subtle" onClick={() => setOpenForm("solo")}>
               Non-collab tasks
             </ToolbarButton>
             <ToolbarDivider />
-            <ToolbarButton icon={<Toolbox16Regular />} appearance="subtle" onClick={() => setOpenForm("tools")}>
-              Tools
+            <ToolbarButton icon={<PeopleCommunity16Regular />} appearance="subtle" onClick={() => setOpenForm("collaborators")}>
+              Collaborators & tasks
             </ToolbarButton>
             <ToolbarDivider />
             <ToolbarButton icon={<Target16Regular />} appearance="subtle" onClick={() => setOpenForm("goals")}>
@@ -1283,6 +1310,11 @@ const App = () => {
                       {description || "No description yet."}
                     </Text>
                   </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXS }}>
+                    <Text size={200} weight="semibold">Pain impact</Text>
+                    <Text size={200}>Weekly loss: {formatMinutes(painSummary.weekly)}</Text>
+                    <Text size={200}>Monthly loss: {formatMinutes(painSummary.monthly)}</Text>
+                  </div>
                 </div>
                 <Divider />
                 <div className={styles.stack}>
@@ -1303,6 +1335,26 @@ const App = () => {
                       return <React.Fragment key={`collab-${idx}`}>{renderPainBadge(p, collabs)}</React.Fragment>;
                     })}
                   </div>
+                  <Text weight="semibold" style={{ marginTop: tokens.spacingVerticalS }}>Individual tasks</Text>
+                  <TagGroup aria-label="Individual tasks (facilitator)" style={{ flexWrap: "wrap", gap: tokens.spacingHorizontalXS }}>
+                    {soloTasks.length === 0 && <Text className={styles.muted}>No individual tasks yet.</Text>}
+                    {soloTasks.map((t, idx) => (
+                      <Tag
+                        key={`${t.title}-${idx}`}
+                        appearance="outline"
+                        shape="rounded"
+                        dismissible
+                        onDismiss={() => removeSoloTask(idx)}
+                        onClick={(e) => {
+                          e.stopPropagation?.();
+                          openPainForTask(t.title);
+                        }}
+                        style={{ cursor: "pointer" }}
+                      >
+                        {t.title} ({t.frequency})
+                      </Tag>
+                    ))}
+                  </TagGroup>
                 </div>
               </div>
             </Card>
@@ -1315,10 +1367,21 @@ const App = () => {
               header={<Subtitle2>Individual (non-collaborative) tasks</Subtitle2>}
               description={<Text className={styles.muted}>Repetitive tasks owned by this role only.</Text>}
             />
-            <TagGroup aria-label="Individual tasks" style={{ marginTop: tokens.spacingVerticalS, flexWrap: "wrap" }}>
+            <TagGroup aria-label="Individual tasks" style={{ marginTop: tokens.spacingVerticalS, flexWrap: "wrap", gap: tokens.spacingHorizontalXS }}>
               {soloTasks.length === 0 && <Text className={styles.muted}>No individual tasks yet.</Text>}
               {soloTasks.map((t, idx) => (
-                <Tag key={`${t.title}-${idx}`} dismissible onDismiss={() => removeSoloTask(idx)} shape="rounded" appearance="outline">
+                <Tag
+                  key={`${t.title}-${idx}`}
+                  dismissible
+                  onDismiss={() => removeSoloTask(idx)}
+                  shape="rounded"
+                  appearance="outline"
+                  onClick={(e) => {
+                    e.stopPropagation?.();
+                    openPainForTask(t.title);
+                  }}
+                  style={{ cursor: "pointer" }}
+                >
                   <span style={{ fontWeight: 600 }}>{t.title}</span>&nbsp;
                   <Text size={200} color="neutral">{`(${t.frequency})`}</Text>
                 </Tag>
@@ -1328,13 +1391,16 @@ const App = () => {
 
           <Card>
             <CardHeader header={<Subtitle2>Tools</Subtitle2>} description={<Text className={styles.muted}>Systems and instruments.</Text>} />
-            <TagGroup aria-label="Tools" style={{ marginTop: tokens.spacingVerticalS, flexWrap: "wrap" }}>
+            <TagGroup
+              aria-label="Tools"
+              style={{ marginTop: tokens.spacingVerticalS, display: "flex", flexWrap: "wrap", gap: tokens.spacingHorizontalXS }}
+            >
               {tools.length === 0 && <Text className={styles.muted}>No tools yet.</Text>}
               {tools.map((tool, idx) => (
                 <Tag
                   key={`${tool}-${idx}`}
                   dismissible
-                  onDismiss={() => setTools(tools.filter((_, i) => i !== idx))}
+                  onDismiss={() => setTools((prev) => prev.filter((_, i) => i !== idx))}
                   shape="rounded"
                   appearance="filled"
                   color="brand"
@@ -1588,6 +1654,7 @@ const App = () => {
                 expanded={diagramExpanded}
                 nodePositions={nodePositions}
                 setNodePositions={setNodePositions}
+                onTaskSelect={openPainForTask}
                 ref={diagramRef}
               />
               <div className={styles.stack} style={{ marginTop: tokens.spacingVerticalM }}>
