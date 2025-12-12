@@ -279,7 +279,9 @@ const useStyles = makeStyles({
     display: "grid",
     gridTemplateColumns: "240px 1fr",
     gap: tokens.spacingHorizontalL,
-    alignItems: "flex-start"
+    alignItems: "flex-start",
+    padding: tokens.spacingHorizontalL,
+    backgroundImage: "linear-gradient(135deg, #2563EB 0%, #7C3AED 45%, #EC4899 100%)"
   },
   navRail: {
     position: "sticky",
