@@ -690,7 +690,7 @@ const Diagram = React.forwardRef(
           const startY = centerY - totalHeight / 2;
           const side = 1;
           return (
-            <g style={{ pointerEvents: "all" }} mask="url(#roleMask)">
+            <g style={{ pointerEvents: "all" }}>
               <text
                 x={centerX + side * (offsetX + 30)}
                 y={startY - 18}
@@ -720,7 +720,7 @@ const Diagram = React.forwardRef(
                       x2={xCenter}
                       y2={y}
                       stroke={tokens.colorNeutralStroke2}
-                      strokeWidth="4"
+                      strokeWidth="3"
                       strokeDasharray="4 3"
                       opacity="0.35"
                       style={{ pointerEvents: "none" }}
@@ -729,11 +729,23 @@ const Diagram = React.forwardRef(
                       x={x}
                       y={y - badgeHeight / 2}
                       width={width}
-                      // height={badgeHeight}
-                      // rx={badgeHeight / 2}
-                      // fill={tokens.colorNeutralBackground1}
-                      
+                      height={badgeHeight}
+                      rx={badgeHeight / 2}
+                      fill={tokens.colorNeutralBackground1}
+                      stroke={visual.stroke}
+                      strokeWidth="2"
                       pointerEvents="all"
+                    />
+                    <rect
+                      x={x + 2}
+                      y={y - badgeHeight / 2 + 2}
+                      width={width - 4}
+                      height={badgeHeight - 4}
+                      rx={10}
+                      fill={visual.color}
+                      opacity="0.08"
+                      stroke="none"
+                      pointerEvents="none"
                     />
                     <text
                       x={x + (side === 1 ? 12 : width - 12)}
