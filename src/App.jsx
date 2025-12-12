@@ -1365,6 +1365,36 @@ const App = () => {
     );
   };
 
+  const renderLossDonut = (weeklyMinutes) => {
+    const safeMinutes = Math.max(0, Number(weeklyMinutes) || 0);
+    const targetMinutes = 2400; // ~40 hours benchmark
+    const pct = Math.min(safeMinutes / targetMinutes, 1);
+    const radius = 28;
+    const circumference = 2 * Math.PI * radius;
+    const filled = circumference * pct;
+    return (
+      <svg width="88" height="88" viewBox="0 0 88 88" aria-label="Weekly loss donut">
+        <g transform="translate(44 44) rotate(-90)">
+          <circle r={radius} fill="none" stroke={tokens.colorNeutralStroke2} strokeWidth="8" opacity="0.3" />
+          <circle
+            r={radius}
+            fill="none"
+            stroke={tokens.colorBrandForeground1}
+            strokeWidth="8"
+            strokeDasharray={`${filled} ${circumference}`}
+            strokeLinecap="round"
+          />
+        </g>
+        <text x="44" y="44" textAnchor="middle" fontSize="12" fontWeight="700" fill={tokens.colorNeutralForeground1}>
+          {Math.round(pct * 100)}%
+        </text>
+        <text x="44" y="58" textAnchor="middle" fontSize="10" fill={tokens.colorNeutralForeground2}>
+          {formatMinutes(safeMinutes)}
+        </text>
+      </svg>
+    );
+  };
+
   const renderModalContent = () => {
     switch (openForm) {
       case "role":
@@ -1592,8 +1622,13 @@ const App = () => {
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXS }}>
                         <Text size={200} weight="semibold">Pain impact</Text>
-                        <Text size={200}>Weekly loss: {formatMinutes(summary.weekly)}</Text>
-                        <Text size={200}>Monthly loss: {formatMinutes(summary.monthly)}</Text>
+                        <div style={{ display: "flex", alignItems: "center", gap: tokens.spacingHorizontalM }}>
+                          {renderLossDonut(summary.weekly)}
+                          <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXXS }}>
+                            <Text size={200}>Weekly loss: {formatMinutes(summary.weekly)}</Text>
+                            <Text size={200}>Monthly loss: {formatMinutes(summary.monthly)}</Text>
+                          </div>
+                        </div>
                       </div>
                     </div>
                     <Divider />
