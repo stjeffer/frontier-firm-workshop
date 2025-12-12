@@ -73,12 +73,14 @@ const useStyles = makeStyles({
   rowTwo: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
-    gap: tokens.spacingHorizontalM
+    gap: tokens.spacingHorizontalM,
+    marginBottom: tokens.spacingVerticalM
   },
   rowThree: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
-    gap: tokens.spacingHorizontalM
+    gap: tokens.spacingHorizontalM,
+    marginBottom: tokens.spacingVerticalM
   },
   roleOverviewGrid: {
     display: "grid",
@@ -150,7 +152,8 @@ const useStyles = makeStyles({
   wideCard: {
     gridColumn: "span 2",
     minWidth: "640px",
-    width: "100%"
+    width: "100%",
+    marginTop: tokens.spacingVerticalM
   },
   tagWrap: {
     display: "flex",
