@@ -61,8 +61,9 @@ const appTheme = {
 
 const useStyles = makeStyles({
   shell: {
-    maxWidth: "1200px",
-    margin: "0 auto",
+    maxWidth: "100%",
+    width: "100%",
+    margin: "0",
     display: "flex",
     flexDirection: "column",
     gap: tokens.spacingVerticalL
@@ -280,8 +281,10 @@ const useStyles = makeStyles({
     gridTemplateColumns: "240px 1fr",
     gap: tokens.spacingHorizontalL,
     alignItems: "flex-start",
-    padding: tokens.spacingHorizontalL,
-    backgroundImage: "linear-gradient(135deg, #2563EB 0%, #7C3AED 45%, #EC4899 100%)"
+    padding: tokens.spacingHorizontalXL,
+    minHeight: "100vh",
+    backgroundColor: "#f6f7fb",
+    backgroundImage: "linear-gradient(135deg, rgba(37,99,235,0.16) 0%, rgba(124,58,237,0.14) 45%, rgba(236,72,153,0.12) 100%)"
   },
   navRail: {
     position: "sticky",
