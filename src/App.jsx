@@ -283,8 +283,8 @@ const useStyles = makeStyles({
     alignItems: "flex-start",
     padding: tokens.spacingHorizontalXL,
     minHeight: "100vh",
-    backgroundColor: "#f6f7fb",
-    backgroundImage: "linear-gradient(135deg, rgba(37,99,235,0.16) 0%, rgba(124,58,237,0.14) 45%, rgba(236,72,153,0.12) 100%)"
+    backgroundColor: "#eef2ff",
+    backgroundImage: "linear-gradient(135deg, rgba(37,99,235,0.28) 0%, rgba(124,58,237,0.24) 45%, rgba(236,72,153,0.2) 100%)"
   },
   navRail: {
     position: "sticky",
