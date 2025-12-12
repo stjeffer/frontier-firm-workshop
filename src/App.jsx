@@ -1056,6 +1056,7 @@ const App = () => {
   const [isFacilitator, setIsFacilitator] = useState(false);
   const [savedRoles, setSavedRoles] = useState([]);
   const [editingRoleId, setEditingRoleId] = useState(null);
+  const [confirmReset, setConfirmReset] = useState(false);
   const diagramRef = useRef(null);
 
   const summary = useMemo(() => ({
@@ -1264,6 +1265,7 @@ const App = () => {
   };
 
   const saveRoleSnapshot = () => {
+    if (!roleName.trim() || !headcount.trim() || !description.trim() || goals.length === 0) return;
     const snap = buildSnapshot();
     setSavedRoles((prev) => {
       const idx = prev.findIndex((r) => r.id === snap.id);
@@ -1403,10 +1405,10 @@ const App = () => {
             <Field label="Role" required>
               <Input placeholder="e.g., Customer Support Specialist" value={roleName} onChange={(_, d) => setRoleName(d.value)} />
             </Field>
-            <Field label="Number of employees">
+            <Field label="Number of employees" required>
               <Input type="number" min={0} placeholder="e.g., 15" value={headcount} onChange={(_, d) => setHeadcount(d.value)} />
             </Field>
-            <Field label="Description">
+            <Field label="Description" required>
               <Textarea rows={3} placeholder="What does a typical day look like?" value={description} onChange={(_, d) => setDescription(d.value)} />
             </Field>
           </div>
@@ -1548,10 +1550,10 @@ const App = () => {
               Goals
             </MenuItem>
             <MenuDivider />
-            <MenuItem icon={<Save16Regular />} onClick={saveRoleSnapshot}>
+            <MenuItem icon={<Save16Regular />} onClick={saveRoleSnapshot} disabled={!roleName.trim() || !headcount.trim() || !description.trim() || goals.length === 0}>
               Save role
             </MenuItem>
-            <MenuItem icon={<Add16Regular />} onClick={resetRole}>
+            <MenuItem icon={<Add16Regular />} onClick={() => setConfirmReset(true)}>
               New role
             </MenuItem>
             <MenuDivider />
@@ -2004,6 +2006,20 @@ const App = () => {
               <Button appearance="secondary" onClick={() => setOpenForm(null)}>
                 Close
               </Button>
+            </DialogActions>
+          </DialogBody>
+        </DialogSurface>
+      </Dialog>
+      <Dialog open={confirmReset} onOpenChange={(_, data) => setConfirmReset(data.open)}>
+        <DialogSurface>
+          <DialogBody>
+            <DialogTitle>Start a new role?</DialogTitle>
+            <DialogContent>
+              <Text>Current role data will be cleared. If you haven’t saved, it will be lost.</Text>
+            </DialogContent>
+            <DialogActions>
+              <Button appearance="secondary" onClick={() => setConfirmReset(false)}>Cancel</Button>
+              <Button appearance="primary" onClick={() => { setConfirmReset(false); resetRole(); }}>Confirm</Button>
             </DialogActions>
           </DialogBody>
         </DialogSurface>
