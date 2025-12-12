@@ -47,6 +47,18 @@ import {
   CheckmarkCircle16Regular
 } from "@fluentui/react-icons";
 
+const appTheme = {
+  ...webLightTheme,
+  colorBrandBackground: "#2563EB",
+  colorBrandBackgroundHover: "#1D4ED8",
+  colorBrandBackgroundPressed: "#1E40AF",
+  colorBrandForeground1: "#2563EB",
+  colorBrandStroke1: "#2563EB",
+  colorCompoundBrandStroke: "#2563EB",
+  shadow4: "0 6px 16px rgba(0,0,0,0.08)",
+  shadow8: "0 10px 30px rgba(0,0,0,0.12)"
+};
+
 const useStyles = makeStyles({
   shell: {
     maxWidth: "1200px",
@@ -110,7 +122,12 @@ const useStyles = makeStyles({
     flexDirection: "column",
     gap: tokens.spacingVerticalS,
     backgroundColor: tokens.colorNeutralBackground1,
-    boxShadow: tokens.shadow16
+    boxShadow: tokens.shadow16,
+    transition: "transform 120ms ease, box-shadow 120ms ease",
+    ":hover": {
+      transform: "translateY(-2px)",
+      boxShadow: tokens.shadow28
+    }
   },
   collaboratorHeader: {
     display: "flex",
@@ -121,7 +138,10 @@ const useStyles = makeStyles({
     width: "100%",
     maxWidth: "100%",
     height: "360px",
-    position: "relative"
+    position: "relative",
+    backgroundColor: tokens.colorNeutralBackground1,
+    backgroundImage:
+      "repeating-linear-gradient(0deg, rgba(37,99,235,0.06) 0, rgba(37,99,235,0.06) 1px, transparent 1px, transparent 22px), repeating-linear-gradient(90deg, rgba(37,99,235,0.06) 0, rgba(37,99,235,0.06) 1px, transparent 1px, transparent 22px)"
   },
   diagramWrapExpanded: {
     height: "calc(100vh - 40px)",
@@ -155,6 +175,15 @@ const useStyles = makeStyles({
     minWidth: "640px",
     width: "100%",
     marginTop: tokens.spacingVerticalM
+  },
+  panelCard: {
+    borderRadius: tokens.borderRadiusLarge,
+    boxShadow: tokens.shadow16,
+    transition: "transform 120ms ease, box-shadow 120ms ease",
+    ":hover": {
+      transform: "translateY(-2px)",
+      boxShadow: tokens.shadow28
+    }
   },
   tagWrap: {
     display: "flex",
@@ -1538,7 +1567,7 @@ const App = () => {
   };
 
   return (
-    <FluentProvider theme={webLightTheme}>
+    <FluentProvider theme={appTheme}>
       <div className={`${styles.shell} ${styles.layout}`}>
         <div className={styles.navRail}>
           <Text weight="semibold">Workspace</Text>
@@ -1653,7 +1682,7 @@ const App = () => {
               const collabPain = (r.painPoints || []).filter((p) => (sharedMap[p.task || p.title] || []).length > 0);
               const soloPain = (r.painPoints || []).filter((p) => (sharedMap[p.task || p.title] || []).length === 0);
               return (
-                <Card key={`${r.id}-${idx}`} style={{ height: "100%" }}>
+                <Card key={`${r.id}-${idx}`} style={{ height: "100%" }} className={styles.panelCard}>
                   <CardHeader
                     header={<Title3>{r.roleName || r.name || "Role not set"}</Title3>}
                     description={
@@ -1729,7 +1758,7 @@ const App = () => {
         ) : (
           <>
         <div className={styles.rowTwo}>
-          <Card>
+          <Card className={styles.panelCard}>
             <CardHeader
               header={<Subtitle2>Individual (non-collaborative) tasks</Subtitle2>}
               description={<Text className={styles.muted}>Repetitive tasks owned by this role only.</Text>}
@@ -1756,7 +1785,7 @@ const App = () => {
             </TagGroup>
           </Card>
 
-          <Card>
+          <Card className={styles.panelCard}>
             <CardHeader header={<Subtitle2>Tools</Subtitle2>} description={<Text className={styles.muted}>Systems and instruments.</Text>} />
             <TagGroup
               aria-label="Tools"
@@ -1781,7 +1810,7 @@ const App = () => {
         </div>
 
         <div className={styles.rowThree}>
-          <Card>
+          <Card className={styles.panelCard}>
             <CardHeader header={<Subtitle2>Collaborators & Tasks</Subtitle2>} description={<Text className={styles.muted}>Link collaborators to this role and map shared tasks.</Text>} />
             <div className={styles.collaborators}>
               {collaborators.length === 0 && <Text className={styles.muted}>No collaborators yet. Add one via the toolbar.</Text>}
@@ -1799,7 +1828,7 @@ const App = () => {
             </div>
           </Card>
 
-          <Card>
+          <Card className={styles.panelCard}>
             <CardHeader header={<Subtitle2>Goals</Subtitle2>} description={<Text className={styles.muted}>Desired outcomes.</Text>} />
             <TagGroup aria-label="Goals" style={{ marginTop: tokens.spacingVerticalS, flexWrap: "wrap" }}>
               {goals.length === 0 && <Text className={styles.muted}>No goals yet.</Text>}
@@ -1821,7 +1850,7 @@ const App = () => {
         </div>
 
         <div className={styles.rowFull}>
-          <Card className={styles.wideCard}>
+          <Card className={`${styles.wideCard} ${styles.panelCard}`}>
             <CardHeader
               header={<Subtitle2>Collaboration Map</Subtitle2>}
               description={<Text className={styles.muted}>Visio-style visualization of the role and collaborator links with shared tasks.</Text>}
