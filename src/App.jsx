@@ -510,9 +510,9 @@ const Diagram = React.forwardRef(
     const centerX = width / 2;
     const centerY = height / 2;
     const radius = expanded ? 150 : 150;
-    const nodeWidth = expanded ? 150 : 150;
+    const nodeWidth = expanded ? 170 : 150;
     const nodeHeight = nodeWidth;
-    const roleWidth = expanded ? 150 : 150;
+    const roleWidth = expanded ? 200 : 150;
     const roleHeight = roleWidth;
     const roleAvatarR = 32;
     const nodeAvatarR = 26;
@@ -743,11 +743,11 @@ const Diagram = React.forwardRef(
                     style={{ cursor: "pointer", pointerEvents: "all" }}
                   >
                     <rect
-                      x={x - 4}
-                      y={y - badgeHeight / 2 - 4}
-                      width={width + 8}
-                      height={badgeHeight + 8}
-                      rx={badgeHeight / 2 + 4}
+                      x={x}
+                      y={y - badgeHeight / 2}
+                      width={width}
+                      height={badgeHeight}
+                      rx={badgeHeight / 2}
                       fill="transparent"
                       pointerEvents="all"
                       onClick={() => onTaskSelect?.(task.title)}
@@ -772,7 +772,7 @@ const Diagram = React.forwardRef(
                       fill={tokens.colorNeutralBackground1}
                       stroke={visual.stroke}
                       strokeWidth="2"
-                      pointerEvents="all"
+                      pointerEvents="none"
                     />
                     <rect
                       x={x + 2}
@@ -783,7 +783,7 @@ const Diagram = React.forwardRef(
                       fill={visual.color}
                       opacity="0.08"
                       stroke="none"
-                      pointerEvents="all"
+                      pointerEvents="none"
                     />
                     <text
                       x={x + (side === 1 ? 12 : width - 12)}
@@ -792,7 +792,7 @@ const Diagram = React.forwardRef(
                       fontSize="12"
                       fill={tokens.colorNeutralForeground1}
                       fontWeight="700"
-                      pointerEvents="all"
+                      pointerEvents="none"
                     >
                       {label}
                     </text>
@@ -854,7 +854,7 @@ const Diagram = React.forwardRef(
             textAnchor="middle"
             dominantBaseline="middle"
           >
-            {truncate(roleName || "Role", 20)}
+            {truncate(roleName || "Role", 28)}
           </text>
         </g>
 
@@ -1624,8 +1624,8 @@ const App = () => {
                                 display: "flex",
                                 flexDirection: "column",
                                 gap: tokens.spacingVerticalM,
-                                width: "250px",
-                                maxWidth: "420px"
+                                width: "360px",
+                                maxWidth: "520px"
                               }}
                             >
                               <Field label="Task (shared or not)">
@@ -1787,7 +1787,7 @@ const App = () => {
                       </Menu>
                     )}
                   </div>
-                  <Text weight="semibold">Shared tasks appear along the connector lines.</Text>
+                  {/* removed helper text in expanded view */}
                 </div>
               </div>
               <Diagram
