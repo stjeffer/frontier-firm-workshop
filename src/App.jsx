@@ -1593,8 +1593,16 @@ const App = () => {
               return (
                 <Card key={`${r.id}-${idx}`} style={{ height: "100%" }}>
                   <CardHeader
-                    header={<Subtitle2>Saved role</Subtitle2>}
-                    description={<Text className={styles.muted}>Everything for this role in one place.</Text>}
+                    header={<Title3>{r.roleName || r.name || "Role not set"}</Title3>}
+                    description={
+                      <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXXS }}>
+                        <Text size={200} className={styles.muted}>Everything for this role in one place.</Text>
+                        <Text size={200}>Headcount: {r.headcount || "—"}</Text>
+                        <Text size={200} className={styles.muted} style={{ maxWidth: "480px" }}>
+                          {r.description || "No description yet."}
+                        </Text>
+                      </div>
+                    }
                     action={
                       <div style={{ display: "flex", gap: tokens.spacingHorizontalXS }}>
                         <Button appearance="subtle" onClick={() => loadRoleSnapshot(r)}>
@@ -1610,16 +1618,7 @@ const App = () => {
                     }
                   />
                   <div className={styles.stack}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: tokens.spacingHorizontalM, alignItems: "flex-start" }}>
-                      <div>
-                        <Title3>{r.roleName || r.name || "Role not set"}</Title3>
-                        <br />
-                        <Text size={200}>Headcount: {r.headcount || "—"}</Text>
-                        <br />
-                        <Text size={300} className={styles.muted} style={{ maxWidth: "320px" }}>
-                          {r.description || "No description yet."}
-                        </Text>
-                      </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: tokens.spacingHorizontalM, alignItems: "flex-start", paddingRight: tokens.spacingHorizontalS }}>
                       <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXS }}>
                         <Text size={200} weight="semibold">Pain impact</Text>
                         <div style={{ display: "flex", alignItems: "center", gap: tokens.spacingHorizontalM }}>
