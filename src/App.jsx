@@ -1384,25 +1384,35 @@ const App = () => {
       <div className={`${styles.shell} ${styles.layout}`}>
         <div className={styles.navRail}>
           <Text weight="semibold">Workspace</Text>
-          <Menu open>
-            <MenuPopover>
-              <MenuList>
-                <div className={styles.navLabel}>Role setup</div>
-                <MenuItem onClick={() => setOpenForm("role")}>Role definition</MenuItem>
-                <MenuItem onClick={() => setOpenForm("tools")}>Tools</MenuItem>
-                <MenuItem onClick={() => setOpenForm("solo")}>Non-collab tasks</MenuItem>
-                <MenuItem onClick={() => setOpenForm("collaborators")}>Collaborators & tasks</MenuItem>
-                <MenuItem onClick={() => setOpenForm("goals")}>Goals</MenuItem>
-                <MenuDivider />
-                <MenuItem onClick={saveRoleSnapshot}>Save role</MenuItem>
-                <MenuItem onClick={resetRole}>New role</MenuItem>
-                <MenuDivider />
-                <MenuItem onClick={() => setIsFacilitator((v) => !v)}>
-                  {isFacilitator ? "Exit facilitator" : "Facilitator view"}
-                </MenuItem>
-              </MenuList>
-            </MenuPopover>
-          </Menu>
+          <MenuList aria-label="Workspace navigation">
+            <div className={styles.navLabel}>Role setup</div>
+            <MenuItem icon={<Add16Regular />} onClick={() => setOpenForm("role")}>
+              Role definition
+            </MenuItem>
+            <MenuItem icon={<Toolbox16Regular />} onClick={() => setOpenForm("tools")}>
+              Tools
+            </MenuItem>
+            <MenuItem icon={<Add16Regular />} onClick={() => setOpenForm("solo")}>
+              Non-collab tasks
+            </MenuItem>
+            <MenuItem icon={<PeopleCommunity16Regular />} onClick={() => setOpenForm("collaborators")}>
+              Collaborators & tasks
+            </MenuItem>
+            <MenuItem icon={<Target16Regular />} onClick={() => setOpenForm("goals")}>
+              Goals
+            </MenuItem>
+            <MenuDivider />
+            <MenuItem icon={<Add16Regular />} onClick={saveRoleSnapshot}>
+              Save role
+            </MenuItem>
+            <MenuItem icon={<Add16Regular />} onClick={resetRole}>
+              New role
+            </MenuItem>
+            <MenuDivider />
+            <MenuItem onClick={() => setIsFacilitator((v) => !v)}>
+              {isFacilitator ? "Exit facilitator" : "Facilitator view"}
+            </MenuItem>
+          </MenuList>
           {savedRoles.length > 0 && (
             <div className={styles.navGroup}>
               <div className={styles.navLabel}>Saved roles</div>
