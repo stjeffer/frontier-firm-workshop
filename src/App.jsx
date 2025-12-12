@@ -191,6 +191,24 @@ const useStyles = makeStyles({
     alignItems: "center",
     gap: tokens.spacingHorizontalM
   },
+  painModal: {
+    position: "fixed",
+    inset: 0,
+    backgroundColor: "rgba(0,0,0,0.25)",
+    zIndex: 1200,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    padding: tokens.spacingHorizontalL
+  },
+  painModalCard: {
+    marginTop: "40px",
+    width: "min(90vw, 680px)",
+    maxWidth: "680px",
+    boxShadow: tokens.shadow64,
+    backgroundColor: tokens.colorNeutralBackground1,
+    borderRadius: tokens.borderRadiusLarge
+  },
   pillWrap: {
     display: "flex",
     flexWrap: "wrap",
@@ -1724,173 +1742,177 @@ const App = () => {
                   </div>
                 </div>
                 {diagramExpanded && painMenuOpen && (
-                  <Card
-                    appearance="subtle"
-                    style={{ padding: tokens.spacingHorizontalM, width: "620px", maxWidth: "640px", marginTop: tokens.spacingVerticalS }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: tokens.spacingVerticalM,
-                        width: "100%"
-                      }}
+                  <div className={styles.painModal} onClick={() => setPainMenuOpen(false)}>
+                    <Card
+                      appearance="filled"
+                      className={styles.painModalCard}
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ padding: tokens.spacingHorizontalM }}
                     >
-                      <Field label="Task (shared or not)">
-                        <Combobox
-                          placeholder="Select or type a task"
-                          freeform
-                          value={painForm.task}
-                          style={{ width: "100%" }}
-                          onOptionSelect={(_, data) =>
-                            setPainForm({
-                              ...painForm,
-                              task: data.optionValue || data.value || "",
-                              shared: false
-                            })
-                          }
-                          onChange={(_, data) => setPainForm({ ...painForm, task: data.value })}
-                        >
-                          {taskOptions.map((t) => (
-                            <Option key={t} value={t}>
-                              {t} {sharedTasksMap[t]?.length > 1 ? "(shared)" : ""}
-                            </Option>
-                          ))}
-                        </Combobox>
-                      </Field>
-                      <Field label={`Severity (${painForm.severity}/5)`} hint={severityLabel[painForm.severity]}>
-                        <Slider
-                          min={1}
-                          max={5}
-                          step={1}
-                          value={painForm.severity}
-                          onChange={(_, data) => setPainForm({ ...painForm, severity: data.value })}
-                        />
-                      </Field>
-                      <Field label="Frequency">
-                        <Combobox
-                          value={painForm.frequency}
-                          style={{ width: "100%" }}
-                          onOptionSelect={(_, data) =>
-                            setPainForm({ ...painForm, frequency: data.optionValue || data.value || "weekly" })
-                          }
-                          onChange={(_, data) => setPainForm({ ...painForm, frequency: data.value })}
-                        >
-                          {["daily", "weekly", "monthly", "adhoc"].map((f) => (
-                            <Option key={f} value={f}>
-                              {f}
-                            </Option>
-                          ))}
-                        </Combobox>
-                      </Field>
-                      <Field label="Duration (per occurrence)">
-                        <div style={{ display: "flex", gap: tokens.spacingHorizontalXS }}>
-                          <Input
-                            type="number"
-                            min={0}
-                            placeholder="e.g., 30"
-                            value={painForm.durationValue}
-                            style={{ width: "100%" }}
-                            onChange={(_, d) => setPainForm({ ...painForm, durationValue: d.value })}
-                          />
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: tokens.spacingVerticalM,
+                          width: "100%"
+                        }}
+                      >
+                        <Field label="Task (shared or not)">
                           <Combobox
-                            value={painForm.durationUnit}
-                            style={{ width: "120px" }}
+                            placeholder="Select or type a task"
+                            freeform
+                            value={painForm.task}
+                            style={{ width: "100%" }}
                             onOptionSelect={(_, data) =>
-                              setPainForm({ ...painForm, durationUnit: data.optionValue || data.value || "minutes" })
+                              setPainForm({
+                                ...painForm,
+                                task: data.optionValue || data.value || "",
+                                shared: false
+                              })
                             }
-                            onChange={(_, data) => setPainForm({ ...painForm, durationUnit: data.value })}
+                            onChange={(_, data) => setPainForm({ ...painForm, task: data.value })}
                           >
-                            <Option value="minutes">minutes</Option>
-                            <Option value="hours">hours</Option>
+                            {taskOptions.map((t) => (
+                              <Option key={t} value={t}>
+                                {t} {sharedTasksMap[t]?.length > 1 ? "(shared)" : ""}
+                              </Option>
+                            ))}
                           </Combobox>
-                        </div>
-                      </Field>
-                      <Field label="Cost / risk">
-                        <Input
-                          placeholder="$500/week"
-                          value={painForm.cost}
-                          style={{ width: "100%" }}
-                          onChange={(_, d) => setPainForm({ ...painForm, cost: d.value })}
-                        />
-                      </Field>
-                      <Field label="Friction type (max 2)">
-                        <Combobox
-                          multiselect
-                          value={painForm.frictionTypes}
-                          style={{ width: "100%" }}
-                          onOptionSelect={(_, data) => {
-                            const option = data.optionValue || data.value;
-                            if (!option) return;
-                            setPainForm((prev) => {
-                              const current = new Set(prev.frictionTypes || []);
-                              if (current.has(option)) {
-                                current.delete(option);
-                              } else if (current.size < 2) {
-                                current.add(option);
+                        </Field>
+                        <Field label={`Severity (${painForm.severity}/5)`} hint={severityLabel[painForm.severity]}>
+                          <Slider
+                            min={1}
+                            max={5}
+                            step={1}
+                            value={painForm.severity}
+                            onChange={(_, data) => setPainForm({ ...painForm, severity: data.value })}
+                          />
+                        </Field>
+                        <Field label="Frequency">
+                          <Combobox
+                            value={painForm.frequency}
+                            style={{ width: "100%" }}
+                            onOptionSelect={(_, data) =>
+                              setPainForm({ ...painForm, frequency: data.optionValue || data.value || "weekly" })
+                            }
+                            onChange={(_, data) => setPainForm({ ...painForm, frequency: data.value })}
+                          >
+                            {["daily", "weekly", "monthly", "adhoc"].map((f) => (
+                              <Option key={f} value={f}>
+                                {f}
+                              </Option>
+                            ))}
+                          </Combobox>
+                        </Field>
+                        <Field label="Duration (per occurrence)">
+                          <div style={{ display: "flex", gap: tokens.spacingHorizontalXS }}>
+                            <Input
+                              type="number"
+                              min={0}
+                              placeholder="e.g., 30"
+                              value={painForm.durationValue}
+                              style={{ width: "100%" }}
+                              onChange={(_, d) => setPainForm({ ...painForm, durationValue: d.value })}
+                            />
+                            <Combobox
+                              value={painForm.durationUnit}
+                              style={{ width: "120px" }}
+                              onOptionSelect={(_, data) =>
+                                setPainForm({ ...painForm, durationUnit: data.optionValue || data.value || "minutes" })
                               }
-                              return { ...prev, frictionTypes: Array.from(current) };
-                            });
-                          }}
-                        >
-                          {[
-                            "Delay (waiting for info, approvals, input)",
-                            "Rework (fixing errors, re-doing work)",
-                            "Manual effort (copy/paste, chasing info)",
-                            "Decision bottleneck (waiting for judgement)",
-                            "Handover friction (Cross-team dependencies)",
-                            "Tool mismatch (wrong or missing system)",
-                            "Compliance/ control burden (over-checking, audit steps)"
-                          ].map((f) => (
-                            <Option key={f} value={f}>
-                              {f}
-                            </Option>
-                          ))}
-                        </Combobox>
-                      </Field>
-                      <Field label="Why is it painful?">
-                        <Textarea
-                          placeholder="Describe the impact"
-                          value={painForm.description}
-                          style={{ width: "100%" }}
-                          rows={3}
-                          onChange={(_, d) => setPainForm({ ...painForm, description: d.value })}
-                        />
-                      </Field>
-                      <div style={{ display: "flex", gap: tokens.spacingHorizontalS, justifyContent: "space-between" }}>
-                        <Text size={200}>
-                          Weekly loss:{" "}
-                          {formatMinutes(
-                            (Number(painForm.durationValue) || 0) *
-                              (painForm.durationUnit === "hours" ? 60 : 1) *
-                              (occurrencesByFrequency[painForm.frequency || "weekly"]?.weekly || 0)
-                          )}
-                        </Text>
-                        <Text size={200}>
-                          Monthly loss:{" "}
-                          {formatMinutes(
-                            (Number(painForm.durationValue) || 0) *
-                              (painForm.durationUnit === "hours" ? 60 : 1) *
-                              (occurrencesByFrequency[painForm.frequency || "weekly"]?.monthly || 0)
-                          )}
-                        </Text>
+                              onChange={(_, data) => setPainForm({ ...painForm, durationUnit: data.value })}
+                            >
+                              <Option value="minutes">minutes</Option>
+                              <Option value="hours">hours</Option>
+                            </Combobox>
+                          </div>
+                        </Field>
+                        <Field label="Cost / risk">
+                          <Input
+                            placeholder="$500/week"
+                            value={painForm.cost}
+                            style={{ width: "100%" }}
+                            onChange={(_, d) => setPainForm({ ...painForm, cost: d.value })}
+                          />
+                        </Field>
+                        <Field label="Friction type (max 2)">
+                          <Combobox
+                            multiselect
+                            value={painForm.frictionTypes}
+                            style={{ width: "100%" }}
+                            onOptionSelect={(_, data) => {
+                              const option = data.optionValue || data.value;
+                              if (!option) return;
+                              setPainForm((prev) => {
+                                const current = new Set(prev.frictionTypes || []);
+                                if (current.has(option)) {
+                                  current.delete(option);
+                                } else if (current.size < 2) {
+                                  current.add(option);
+                                }
+                                return { ...prev, frictionTypes: Array.from(current) };
+                              });
+                            }}
+                          >
+                            {[
+                              "Delay (waiting for info, approvals, input)",
+                              "Rework (fixing errors, re-doing work)",
+                              "Manual effort (copy/paste, chasing info)",
+                              "Decision bottleneck (waiting for judgement)",
+                              "Handover friction (Cross-team dependencies)",
+                              "Tool mismatch (wrong or missing system)",
+                              "Compliance/ control burden (over-checking, audit steps)"
+                            ].map((f) => (
+                              <Option key={f} value={f}>
+                                {f}
+                              </Option>
+                            ))}
+                          </Combobox>
+                        </Field>
+                        <Field label="Why is it painful?">
+                          <Textarea
+                            placeholder="Describe the impact"
+                            value={painForm.description}
+                            style={{ width: "100%" }}
+                            rows={3}
+                            onChange={(_, d) => setPainForm({ ...painForm, description: d.value })}
+                          />
+                        </Field>
+                        <div style={{ display: "flex", gap: tokens.spacingHorizontalS, justifyContent: "space-between" }}>
+                          <Text size={200}>
+                            Weekly loss:{" "}
+                            {formatMinutes(
+                              (Number(painForm.durationValue) || 0) *
+                                (painForm.durationUnit === "hours" ? 60 : 1) *
+                                (occurrencesByFrequency[painForm.frequency || "weekly"]?.weekly || 0)
+                            )}
+                          </Text>
+                          <Text size={200}>
+                            Monthly loss:{" "}
+                            {formatMinutes(
+                              (Number(painForm.durationValue) || 0) *
+                                (painForm.durationUnit === "hours" ? 60 : 1) *
+                                (occurrencesByFrequency[painForm.frequency || "weekly"]?.monthly || 0)
+                            )}
+                          </Text>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: tokens.spacingHorizontalS }}>
+                          <Button onClick={() => setPainMenuOpen(false)}>Cancel</Button>
+                          <Button
+                            appearance="primary"
+                            icon={<Add16Regular />}
+                            disabled={!painForm.task.trim()}
+                            onClick={() => {
+                              addPainPoint();
+                              setPainMenuOpen(false);
+                            }}
+                          >
+                            Save
+                          </Button>
+                        </div>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "flex-end", gap: tokens.spacingHorizontalS }}>
-                        <Button onClick={() => setPainMenuOpen(false)}>Cancel</Button>
-                        <Button
-                          appearance="primary"
-                          icon={<Add16Regular />}
-                          disabled={!painForm.task.trim()}
-                          onClick={() => {
-                            addPainPoint();
-                            setPainMenuOpen(false);
-                          }}
-                        >
-                          Save
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
+                    </Card>
+                  </div>
                 )}
               </div>
               <Diagram
