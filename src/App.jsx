@@ -37,10 +37,13 @@ import {
 import {
   Delete16Regular,
   Add16Regular,
+  Save16Regular,
   CalendarClock24Regular,
   PeopleCommunity16Regular,
   Toolbox16Regular,
-  Target16Regular
+  Target16Regular,
+  TaskListSquareLtr16Regular,
+  DocumentText16Regular
 } from "@fluentui/react-icons";
 
 const useStyles = makeStyles({
@@ -1189,22 +1192,10 @@ const App = () => {
     setDiagramExpanded(true);
   };
 
-  const resetRole = () => {
-    setRoleName("");
-    setHeadcount("");
-    setDescription("");
-    setGoals([]);
-    setTools([]);
-    setSoloTasks([]);
-    setCollaborators([]);
-    setPainPoints([]);
-    setNodePositions({});
-  };
-
-  const saveRoleSnapshot = () => {
+  const buildSnapshot = () => {
     const id = `${Date.now()}`;
     const name = roleName || "Untitled role";
-    const snapshot = {
+    return {
       id,
       name,
       roleName,
@@ -1217,7 +1208,38 @@ const App = () => {
       painPoints,
       nodePositions
     };
-    setSavedRoles((prev) => [...prev, snapshot]);
+  };
+
+  const resetRole = () => {
+    const hasContent =
+      roleName ||
+      headcount ||
+      description ||
+      goals.length ||
+      tools.length ||
+      soloTasks.length ||
+      collaborators.length ||
+      painPoints.length;
+    if (hasContent) {
+      setSavedRoles((prev) => [...prev, buildSnapshot()]);
+    }
+    setRoleName("");
+    setHeadcount("");
+    setDescription("");
+    setGoals([]);
+    setTools([]);
+    setSoloTasks([]);
+    setCollaborators([]);
+    setPainPoints([]);
+    setNodePositions({});
+  };
+
+  const saveRoleSnapshot = () => {
+    setSavedRoles((prev) => [...prev, buildSnapshot()]);
+  };
+
+  const deleteSavedRole = (id) => {
+    setSavedRoles((prev) => prev.filter((r) => r.id !== id));
   };
 
   const handlePainOverlayPointerDown = (e) => {
@@ -1267,6 +1289,17 @@ const App = () => {
       { weekly: 0, monthly: 0 }
     );
   }, [painPoints]);
+
+  const summarizePain = (points = []) =>
+    points.reduce(
+      (acc, p) => {
+        const { weekly, monthly } = calcPainLoss(p);
+        acc.weekly += weekly;
+        acc.monthly += monthly;
+        return acc;
+      },
+      { weekly: 0, monthly: 0 }
+    );
 
   const renderPainBadge = (p, collaboratorsList = []) => {
     const severityColor = p.severity >= 4 ? "danger" : p.severity >= 3 ? "warning" : "brand";
@@ -1416,13 +1449,13 @@ const App = () => {
           <Text weight="semibold">Workspace</Text>
           <MenuList aria-label="Workspace navigation">
             <div className={styles.navLabel}>Role setup</div>
-            <MenuItem icon={<Add16Regular />} onClick={() => setOpenForm("role")}>
+            <MenuItem icon={<DocumentText16Regular />} onClick={() => setOpenForm("role")}>
               Role definition
             </MenuItem>
             <MenuItem icon={<Toolbox16Regular />} onClick={() => setOpenForm("tools")}>
               Tools
             </MenuItem>
-            <MenuItem icon={<Add16Regular />} onClick={() => setOpenForm("solo")}>
+            <MenuItem icon={<TaskListSquareLtr16Regular />} onClick={() => setOpenForm("solo")}>
               Non-collab tasks
             </MenuItem>
             <MenuItem icon={<PeopleCommunity16Regular />} onClick={() => setOpenForm("collaborators")}>
@@ -1432,7 +1465,7 @@ const App = () => {
               Goals
             </MenuItem>
             <MenuDivider />
-            <MenuItem icon={<Add16Regular />} onClick={saveRoleSnapshot}>
+            <MenuItem icon={<Save16Regular />} onClick={saveRoleSnapshot}>
               Save role
             </MenuItem>
             <MenuItem icon={<Add16Regular />} onClick={resetRole}>
@@ -1472,68 +1505,95 @@ const App = () => {
         <div>
         {isFacilitator ? (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(420px, 1fr))", gap: tokens.spacingHorizontalL }}>
-            <Card style={{ height: "100%" }}>
-              <CardHeader
-                header={<Subtitle2>Role snapshot</Subtitle2>}
-                description={<Text className={styles.muted}>Everything for this role in one place.</Text>}
-              />
-              <div className={styles.stack}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: tokens.spacingHorizontalM, alignItems: "flex-start" }}>
-                  <div>
-                    <Title3>{roleName || "Role not set"}</Title3>
-                    <Text size={200}>Headcount: {headcount || "—"}</Text>
-                    <Text size={300} className={styles.muted} style={{ maxWidth: "320px" }}>
-                      {description || "No description yet."}
-                    </Text>
+            {[{ id: "current", name: roleName || "Role not set", roleName, headcount, description, goals, tools, soloTasks, collaborators, painPoints }, ...savedRoles].map((r, idx) => {
+              const summary = summarizePain(r.painPoints || []);
+              const sharedMap = (() => {
+                const map = {};
+                (r.collaborators || []).forEach((c) => (c.tasks || []).forEach((t) => {
+                  map[t] = map[t] || [];
+                  map[t].push(c.name);
+                }));
+                return map;
+              })();
+              const collabPain = (r.painPoints || []).filter((p) => (sharedMap[p.task || p.title] || []).length > 0);
+              const soloPain = (r.painPoints || []).filter((p) => (sharedMap[p.task || p.title] || []).length === 0);
+              return (
+                <Card key={`${r.id}-${idx}`} style={{ height: "100%" }}>
+                  <CardHeader
+                    // header={<Subtitle2>{idx === 0 ? "Current role snapshot" : "Saved role"}</Subtitle2>}
+                    // description={<Text className={styles.muted}>Everything for this role in one place.</Text>}
+                    action={
+                      idx > 0 ? (
+                        <Button
+                          appearance="subtle"
+                          icon={<Delete16Regular />}
+                          aria-label="Delete saved role"
+                          onClick={() => deleteSavedRole(r.id)}
+                        />
+                      ) : null
+                    }
+                  />
+                  <div className={styles.stack}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: tokens.spacingHorizontalM, alignItems: "flex-start" }}>
+                      <div>
+                        <Title3>{r.roleName || r.name || "Role not set"}</Title3>
+                        <br />
+                        <Text size={200}>Headcount: {r.headcount || "—"}</Text>
+                        <br />
+                        <Text size={300} className={styles.muted} style={{ maxWidth: "320px" }}>
+                          {r.description || "No description yet."}
+                        </Text>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXS }}>
+                        <Text size={200} weight="semibold">Pain impact</Text>
+                        <Text size={200}>Weekly loss: {formatMinutes(summary.weekly)}</Text>
+                        <Text size={200}>Monthly loss: {formatMinutes(summary.monthly)}</Text>
+                      </div>
+                    </div>
+                    <Divider />
+                    <div className={styles.stack}>
+                      <Text weight="semibold">Isolated pain points</Text>
+                      <div style={{ display: "flex", gap: tokens.spacingHorizontalS, flexWrap: "wrap" }}>
+                        {(soloPain || []).length === 0 && <Text className={styles.muted}>None captured.</Text>}
+                        {soloPain.map((p, i2) => (
+                          <React.Fragment key={`iso-${idx}-${i2}`}>{renderPainBadge(p)}</React.Fragment>
+                        ))}
+                      </div>
+                      <Text weight="semibold" style={{ marginTop: tokens.spacingVerticalS }}>
+                        Collaborative pain points
+                      </Text>
+                      <div style={{ display: "flex", gap: tokens.spacingHorizontalS, flexWrap: "wrap" }}>
+                        {(collabPain || []).length === 0 && <Text className={styles.muted}>None captured.</Text>}
+                        {collabPain.map((p, i3) => {
+                          const collabs = sharedMap[p.task || p.title] || [];
+                          return <React.Fragment key={`collab-${idx}-${i3}`}>{renderPainBadge(p, collabs)}</React.Fragment>;
+                        })}
+                      </div>
+                      <Text weight="semibold" style={{ marginTop: tokens.spacingVerticalS }}>Individual tasks</Text>
+                      <TagGroup aria-label="Individual tasks (facilitator)" style={{ flexWrap: "wrap", gap: tokens.spacingHorizontalXS }}>
+                        {(r.soloTasks || []).length === 0 && <Text className={styles.muted}>No individual tasks yet.</Text>}
+                        {(r.soloTasks || []).map((t, i4) => (
+                          <Tag
+                            key={`${t.title}-${i4}`}
+                            appearance="outline"
+                            shape="rounded"
+                            dismissible
+                            onDismiss={() => idx === 0 && removeSoloTask(i4)}
+                            onClick={(e) => {
+                              e.stopPropagation?.();
+                              if (idx === 0) openPainForTask(t.title);
+                            }}
+                            style={{ cursor: idx === 0 ? "pointer" : "default" }}
+                          >
+                            {t.title} ({t.frequency})
+                          </Tag>
+                        ))}
+                      </TagGroup>
+                    </div>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXS }}>
-                    <Text size={200} weight="semibold">Pain impact</Text>
-                    <Text size={200}>Weekly loss: {formatMinutes(painSummary.weekly)}</Text>
-                    <Text size={200}>Monthly loss: {formatMinutes(painSummary.monthly)}</Text>
-                  </div>
-                </div>
-                <Divider />
-                <div className={styles.stack}>
-                  <Text weight="semibold">Isolated pain points</Text>
-                  <div style={{ display: "flex", gap: tokens.spacingHorizontalS, flexWrap: "wrap" }}>
-                    {isolatedPainPoints.length === 0 && <Text className={styles.muted}>None captured.</Text>}
-                    {isolatedPainPoints.map((p, idx) => (
-                      <React.Fragment key={`iso-${idx}`}>{renderPainBadge(p)}</React.Fragment>
-                    ))}
-                  </div>
-                  <Text weight="semibold" style={{ marginTop: tokens.spacingVerticalS }}>
-                    Collaborative pain points
-                  </Text>
-                  <div style={{ display: "flex", gap: tokens.spacingHorizontalS, flexWrap: "wrap" }}>
-                    {collaborativePainPoints.length === 0 && <Text className={styles.muted}>None captured.</Text>}
-                    {collaborativePainPoints.map((p, idx) => {
-                      const collabs = sharedTasksMap[p.task || p.title] || [];
-                      return <React.Fragment key={`collab-${idx}`}>{renderPainBadge(p, collabs)}</React.Fragment>;
-                    })}
-                  </div>
-                  <Text weight="semibold" style={{ marginTop: tokens.spacingVerticalS }}>Individual tasks</Text>
-                  <TagGroup aria-label="Individual tasks (facilitator)" style={{ flexWrap: "wrap", gap: tokens.spacingHorizontalXS }}>
-                    {soloTasks.length === 0 && <Text className={styles.muted}>No individual tasks yet.</Text>}
-                    {soloTasks.map((t, idx) => (
-                      <Tag
-                        key={`${t.title}-${idx}`}
-                        appearance="outline"
-                        shape="rounded"
-                        dismissible
-                        onDismiss={() => removeSoloTask(idx)}
-                        onClick={(e) => {
-                          e.stopPropagation?.();
-                          openPainForTask(t.title);
-                        }}
-                        style={{ cursor: "pointer" }}
-                      >
-                        {t.title} ({t.frequency})
-                      </Tag>
-                    ))}
-                  </TagGroup>
-                </div>
-              </div>
-            </Card>
+                </Card>
+              );
+            })}
           </div>
         ) : (
           <>
@@ -1640,13 +1700,12 @@ const App = () => {
                 <div className={styles.topNav}>
                   <div className={styles.topNavLeft}>
                     <Switch checked={diagramExpanded} onChange={(_, data) => setDiagramExpanded(data.checked)} label="Expand to full screen" />
-                    {diagramExpanded && (
+                    {/* {diagramExpanded && (
                       <Button appearance="primary" icon={<Add16Regular />} onClick={() => setPainMenuOpen((prev) => !prev)}>
                         Add pain point
                       </Button>
-                    )}
+                    )} */}
                   </div>
-                  {diagramExpanded && <Text weight="semibold">Shared tasks appear along the connector lines.</Text>}
                 </div>
                 {diagramExpanded && painMenuOpen && (
                   <Card
