@@ -923,7 +923,7 @@ const Diagram = React.forwardRef(
           const startY = centerY - totalHeight / 2;
           const side = 1; // to the right; flip to -1 for left
           return (
-            <g mask="url(#roleMask)">
+            <g mask="url(#roleMask)" style={{ pointerEvents: "all" }}>
               <text
                 x={centerX + side * (offsetX + 30)}
                 y={startY - 18}
@@ -940,8 +940,13 @@ const Diagram = React.forwardRef(
                 const xCenter = centerX + side * offsetX;
                 const x = xCenter - (side === 1 ? 0 : width);
                 const textAnchor = side === 1 ? "start" : "end";
+                const visual = getPainVisual(painPoints, task.title);
                 return (
-                  <g key={`solo-${idx}`}>
+                  <g
+                    key={`solo-${idx}`}
+                    onClick={() => onTaskSelect?.(task.title)}
+                    style={{ cursor: "pointer", pointerEvents: "all" }}
+                  >
                     <line
                       x1={centerX}
                       y1={centerY}
@@ -951,6 +956,7 @@ const Diagram = React.forwardRef(
                       strokeWidth="1.5"
                       strokeDasharray="4 3"
                       opacity="0.6"
+                      style={{ pointerEvents: "none" }}
                     />
                     <rect
                       x={x}
@@ -959,9 +965,20 @@ const Diagram = React.forwardRef(
                       height={badgeHeight}
                       rx={badgeHeight / 2}
                       fill={tokens.colorNeutralBackground1}
-                      stroke={tokens.colorBrandStroke1}
-                      strokeWidth="1.5"
-                      filter="url(#shadow)"
+                      stroke={visual.stroke}
+                      strokeWidth="2"
+                      pointerEvents="all"
+                    />
+                    <rect
+                      x={x + 2}
+                      y={y - badgeHeight / 2 + 2}
+                      width={width - 4}
+                      height={badgeHeight - 4}
+                      rx={10}
+                      fill={visual.color}
+                      opacity="0.08"
+                      stroke="none"
+                      pointerEvents="none"
                     />
                     <text
                       x={x + (side === 1 ? 12 : width - 12)}
@@ -970,6 +987,7 @@ const Diagram = React.forwardRef(
                       fontSize="12"
                       fill={tokens.colorNeutralForeground1}
                       fontWeight="700"
+                      pointerEvents="none"
                     >
                       {label}
                     </text>
