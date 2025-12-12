@@ -1384,22 +1384,24 @@ const App = () => {
       <div className={`${styles.shell} ${styles.layout}`}>
         <div className={styles.navRail}>
           <Text weight="semibold">Workspace</Text>
-          <Menu>
-            <MenuList>
-              <div className={styles.navLabel}>Role setup</div>
-              <MenuItem onClick={() => setOpenForm("role")}>Role definition</MenuItem>
-              <MenuItem onClick={() => setOpenForm("tools")}>Tools</MenuItem>
-              <MenuItem onClick={() => setOpenForm("solo")}>Non-collab tasks</MenuItem>
-              <MenuItem onClick={() => setOpenForm("collaborators")}>Collaborators & tasks</MenuItem>
-              <MenuItem onClick={() => setOpenForm("goals")}>Goals</MenuItem>
-              <MenuDivider />
-              <MenuItem onClick={saveRoleSnapshot}>Save role</MenuItem>
-              <MenuItem onClick={resetRole}>New role</MenuItem>
-              <MenuDivider />
-              <MenuItem onClick={() => setIsFacilitator((v) => !v)}>
-                {isFacilitator ? "Exit facilitator" : "Facilitator view"}
-              </MenuItem>
-            </MenuList>
+          <Menu open>
+            <MenuPopover>
+              <MenuList>
+                <div className={styles.navLabel}>Role setup</div>
+                <MenuItem onClick={() => setOpenForm("role")}>Role definition</MenuItem>
+                <MenuItem onClick={() => setOpenForm("tools")}>Tools</MenuItem>
+                <MenuItem onClick={() => setOpenForm("solo")}>Non-collab tasks</MenuItem>
+                <MenuItem onClick={() => setOpenForm("collaborators")}>Collaborators & tasks</MenuItem>
+                <MenuItem onClick={() => setOpenForm("goals")}>Goals</MenuItem>
+                <MenuDivider />
+                <MenuItem onClick={saveRoleSnapshot}>Save role</MenuItem>
+                <MenuItem onClick={resetRole}>New role</MenuItem>
+                <MenuDivider />
+                <MenuItem onClick={() => setIsFacilitator((v) => !v)}>
+                  {isFacilitator ? "Exit facilitator" : "Facilitator view"}
+                </MenuItem>
+              </MenuList>
+            </MenuPopover>
           </Menu>
           {savedRoles.length > 0 && (
             <div className={styles.navGroup}>
