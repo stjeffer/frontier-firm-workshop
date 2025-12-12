@@ -1627,6 +1627,7 @@ const App = () => {
                           <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXXS }}>
                             <Text size={200}>Weekly loss: {formatMinutes(summary.weekly)}</Text>
                             <Text size={200}>Monthly loss: {formatMinutes(summary.monthly)}</Text>
+                            <Text size={200} color="neutral">Share of a 40h week spent in friction/pain.</Text>
                           </div>
                         </div>
                       </div>
