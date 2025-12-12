@@ -43,7 +43,8 @@ import {
   Toolbox16Regular,
   Target16Regular,
   TaskListSquareLtr16Regular,
-  DocumentText16Regular
+  DocumentText16Regular,
+  CheckmarkCircle16Regular
 } from "@fluentui/react-icons";
 
 const useStyles = makeStyles({
@@ -1060,6 +1061,12 @@ const App = () => {
   const [savedRoles, setSavedRoles] = useState([]);
   const [editingRoleId, setEditingRoleId] = useState(null);
   const [confirmReset, setConfirmReset] = useState(false);
+
+  const roleComplete = roleName.trim() && headcount.trim() && description.trim();
+  const toolsComplete = tools.length > 0;
+  const soloComplete = soloTasks.length > 0;
+  const collabComplete = collaborators.length > 0;
+  const goalsComplete = goals.length > 0;
   const diagramRef = useRef(null);
 
   const summary = useMemo(() => ({
@@ -1537,19 +1544,69 @@ const App = () => {
           <Text weight="semibold">Workspace</Text>
           <MenuList aria-label="Workspace navigation">
             <div className={styles.navLabel}>Role setup</div>
-            <MenuItem icon={<DocumentText16Regular />} onClick={() => setOpenForm("role")}>
+            <MenuItem
+              icon={<DocumentText16Regular />}
+              onClick={() => setOpenForm("role")}
+              secondaryContent={
+                roleComplete ? (
+                  <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
+                    <CheckmarkCircle16Regular />
+                  </span>
+                ) : null
+              }
+            >
               Role definition
             </MenuItem>
-            <MenuItem icon={<Toolbox16Regular />} onClick={() => setOpenForm("tools")}>
+            <MenuItem
+              icon={<Toolbox16Regular />}
+              onClick={() => setOpenForm("tools")}
+              secondaryContent={
+                toolsComplete ? (
+                  <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
+                    <CheckmarkCircle16Regular />
+                  </span>
+                ) : null
+              }
+            >
               Tools
             </MenuItem>
-            <MenuItem icon={<TaskListSquareLtr16Regular />} onClick={() => setOpenForm("solo")}>
+            <MenuItem
+              icon={<TaskListSquareLtr16Regular />}
+              onClick={() => setOpenForm("solo")}
+              secondaryContent={
+                soloComplete ? (
+                  <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
+                    <CheckmarkCircle16Regular />
+                  </span>
+                ) : null
+              }
+            >
               Non-collab tasks
             </MenuItem>
-            <MenuItem icon={<PeopleCommunity16Regular />} onClick={() => setOpenForm("collaborators")}>
+            <MenuItem
+              icon={<PeopleCommunity16Regular />}
+              onClick={() => setOpenForm("collaborators")}
+              secondaryContent={
+                collabComplete ? (
+                  <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
+                    <CheckmarkCircle16Regular />
+                  </span>
+                ) : null
+              }
+            >
               Collaborators & tasks
             </MenuItem>
-            <MenuItem icon={<Target16Regular />} onClick={() => setOpenForm("goals")}>
+            <MenuItem
+              icon={<Target16Regular />}
+              onClick={() => setOpenForm("goals")}
+              secondaryContent={
+                goalsComplete ? (
+                  <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
+                    <CheckmarkCircle16Regular />
+                  </span>
+                ) : null
+              }
+            >
               Goals
             </MenuItem>
             <MenuDivider />
