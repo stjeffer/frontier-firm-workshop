@@ -1037,6 +1037,7 @@ const App = () => {
   const [openForm, setOpenForm] = useState(null);
   const [isFacilitator, setIsFacilitator] = useState(false);
   const [savedRoles, setSavedRoles] = useState([]);
+  const [editingRoleId, setEditingRoleId] = useState(null);
   const diagramRef = useRef(null);
 
   const summary = useMemo(() => ({
@@ -1192,8 +1193,8 @@ const App = () => {
     setDiagramExpanded(true);
   };
 
-  const buildSnapshot = () => {
-    const id = `${Date.now()}`;
+  const buildSnapshot = (explicitId) => {
+    const id = explicitId || editingRoleId || `${Date.now()}`;
     const name = roleName || "Untitled role";
     return {
       id,
@@ -1221,7 +1222,16 @@ const App = () => {
       collaborators.length ||
       painPoints.length;
     if (hasContent) {
-      setSavedRoles((prev) => [...prev, buildSnapshot()]);
+      const snap = buildSnapshot();
+      setSavedRoles((prev) => {
+        const idx = prev.findIndex((r) => r.id === snap.id);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = snap;
+          return next;
+        }
+        return [...prev, snap];
+      });
     }
     setRoleName("");
     setHeadcount("");
@@ -1232,10 +1242,35 @@ const App = () => {
     setCollaborators([]);
     setPainPoints([]);
     setNodePositions({});
+    setEditingRoleId(null);
   };
 
   const saveRoleSnapshot = () => {
-    setSavedRoles((prev) => [...prev, buildSnapshot()]);
+    const snap = buildSnapshot();
+    setSavedRoles((prev) => {
+      const idx = prev.findIndex((r) => r.id === snap.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = snap;
+        return next;
+      }
+      return [...prev, snap];
+    });
+  };
+
+  const loadRoleSnapshot = (snap) => {
+    if (!snap) return;
+    setRoleName(snap.roleName || "");
+    setHeadcount(snap.headcount || "");
+    setDescription(snap.description || "");
+    setGoals(snap.goals || []);
+    setTools(snap.tools || []);
+    setSoloTasks(snap.soloTasks || []);
+    setCollaborators(snap.collaborators || []);
+    setPainPoints(snap.painPoints || []);
+    setNodePositions(snap.nodePositions || {});
+    setEditingRoleId(snap.id || null);
+    setIsFacilitator(false);
   };
 
   const deleteSavedRole = (id) => {
@@ -1484,17 +1519,7 @@ const App = () => {
                   key={r.id}
                   appearance="secondary"
                   size="small"
-                  onClick={() => {
-                    setRoleName(r.roleName || "");
-                    setHeadcount(r.headcount || "");
-                    setDescription(r.description || "");
-                    setGoals(r.goals || []);
-                    setTools(r.tools || []);
-                    setSoloTasks(r.soloTasks || []);
-                    setCollaborators(r.collaborators || []);
-                    setPainPoints(r.painPoints || []);
-                    setNodePositions(r.nodePositions || {});
-                  }}
+                  onClick={() => loadRoleSnapshot(r)}
                 >
                   {r.name}
                 </Button>
@@ -1505,7 +1530,7 @@ const App = () => {
         <div>
         {isFacilitator ? (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(420px, 1fr))", gap: tokens.spacingHorizontalL }}>
-            {[{ id: "current", name: roleName || "Role not set", roleName, headcount, description, goals, tools, soloTasks, collaborators, painPoints }, ...savedRoles].map((r, idx) => {
+            {(savedRoles.length === 0 ? [] : savedRoles).map((r, idx) => {
               const summary = summarizePain(r.painPoints || []);
               const sharedMap = (() => {
                 const map = {};
@@ -1520,17 +1545,20 @@ const App = () => {
               return (
                 <Card key={`${r.id}-${idx}`} style={{ height: "100%" }}>
                   <CardHeader
-                    // header={<Subtitle2>{idx === 0 ? "Current role snapshot" : "Saved role"}</Subtitle2>}
-                    // description={<Text className={styles.muted}>Everything for this role in one place.</Text>}
+                    header={<Subtitle2>Saved role</Subtitle2>}
+                    description={<Text className={styles.muted}>Everything for this role in one place.</Text>}
                     action={
-                      idx > 0 ? (
+                      <div style={{ display: "flex", gap: tokens.spacingHorizontalXS }}>
+                        <Button appearance="subtle" onClick={() => loadRoleSnapshot(r)}>
+                          Open
+                        </Button>
                         <Button
                           appearance="subtle"
                           icon={<Delete16Regular />}
                           aria-label="Delete saved role"
                           onClick={() => deleteSavedRole(r.id)}
                         />
-                      ) : null
+                      </div>
                     }
                   />
                   <div className={styles.stack}>
@@ -1569,31 +1597,19 @@ const App = () => {
                           return <React.Fragment key={`collab-${idx}-${i3}`}>{renderPainBadge(p, collabs)}</React.Fragment>;
                         })}
                       </div>
-                      {/* <Text weight="semibold" style={{ marginTop: tokens.spacingVerticalS }}>Individual tasks</Text>
-                      <TagGroup aria-label="Individual tasks (facilitator)" style={{ flexWrap: "wrap", gap: tokens.spacingHorizontalXS }}>
-                        {(r.soloTasks || []).length === 0 && <Text className={styles.muted}>No individual tasks yet.</Text>}
-                        {(r.soloTasks || []).map((t, i4) => (
-                          <Tag
-                            key={`${t.title}-${i4}`}
-                            appearance="outline"
-                            shape="rounded"
-                            dismissible
-                            onDismiss={() => idx === 0 && removeSoloTask(i4)}
-                            onClick={(e) => {
-                              e.stopPropagation?.();
-                              if (idx === 0) openPainForTask(t.title);
-                            }}
-                            style={{ cursor: idx === 0 ? "pointer" : "default" }}
-                          >
-                            {t.title} ({t.frequency})
-                          </Tag>
-                        ))}
-                      </TagGroup> */}
                     </div>
                   </div>
                 </Card>
               );
             })}
+            {savedRoles.length === 0 && (
+              <Card>
+                <CardHeader
+                  header={<Subtitle2>No roles saved yet</Subtitle2>}
+                  description={<Text className={styles.muted}>Save a role to see it here.</Text>}
+                />
+              </Card>
+            )}
           </div>
         ) : (
           <>
