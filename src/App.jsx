@@ -24,6 +24,8 @@ import {
   MenuTrigger,
   MenuPopover,
   MenuList,
+  MenuItem,
+  MenuDivider,
   Toolbar,
   ToolbarButton,
   ToolbarDivider,
@@ -221,6 +223,32 @@ const useStyles = makeStyles({
     display: "flex",
     flexDirection: "column",
     gap: tokens.spacingVerticalS
+  },
+  layout: {
+    display: "grid",
+    gridTemplateColumns: "240px 1fr",
+    gap: tokens.spacingHorizontalL,
+    alignItems: "flex-start"
+  },
+  navRail: {
+    position: "sticky",
+    top: tokens.spacingVerticalL,
+    height: "100vh",
+    padding: tokens.spacingHorizontalM,
+    borderRight: `1px solid ${tokens.colorNeutralStroke2}`,
+    backgroundColor: tokens.colorNeutralBackground2,
+    borderRadius: tokens.borderRadiusLarge,
+    display: "flex",
+    flexDirection: "column",
+    gap: tokens.spacingVerticalM
+  },
+  navGroup: {
+    display: "grid",
+    gap: tokens.spacingVerticalXS
+  },
+  navLabel: {
+    margin: `${tokens.spacingVerticalXS} 0`,
+    color: tokens.colorNeutralForeground2
   }
 });
 
@@ -990,6 +1018,7 @@ const App = () => {
   const [painMenuOpen, setPainMenuOpen] = useState(false);
   const [openForm, setOpenForm] = useState(null);
   const [isFacilitator, setIsFacilitator] = useState(false);
+  const [savedRoles, setSavedRoles] = useState([]);
   const diagramRef = useRef(null);
 
   const summary = useMemo(() => ({
@@ -1128,6 +1157,37 @@ const App = () => {
     setPainForm((prev) => ({ ...prev, task: title }));
     setPainMenuOpen(true);
     setDiagramExpanded(true);
+  };
+
+  const resetRole = () => {
+    setRoleName("");
+    setHeadcount("");
+    setDescription("");
+    setGoals([]);
+    setTools([]);
+    setSoloTasks([]);
+    setCollaborators([]);
+    setPainPoints([]);
+    setNodePositions({});
+  };
+
+  const saveRoleSnapshot = () => {
+    const id = `${Date.now()}`;
+    const name = roleName || "Untitled role";
+    const snapshot = {
+      id,
+      name,
+      roleName,
+      headcount,
+      description,
+      goals,
+      tools,
+      soloTasks,
+      collaborators,
+      painPoints,
+      nodePositions
+    };
+    setSavedRoles((prev) => [...prev, snapshot]);
   };
 
   const handlePainOverlayPointerDown = (e) => {
@@ -1321,36 +1381,53 @@ const App = () => {
 
   return (
     <FluentProvider theme={webLightTheme}>
-      <div className={styles.shell}>
-        {!isFacilitator ? (
-          <Toolbar aria-label="Workflow actions" className={styles.toolbar}>
-            <ToolbarButton icon={<Add16Regular />} appearance="subtle" onClick={() => setOpenForm("role")}>
-              Role definition
-            </ToolbarButton>
-            <ToolbarDivider />
-            <ToolbarButton icon={<Toolbox16Regular />} appearance="subtle" onClick={() => setOpenForm("tools")}>
-              Tools
-            </ToolbarButton>
-            <ToolbarDivider />
-            <ToolbarButton icon={<Add16Regular />} appearance="subtle" onClick={() => setOpenForm("solo")}>
-              Non-collab tasks
-            </ToolbarButton>
-            <ToolbarDivider />
-            <ToolbarButton icon={<PeopleCommunity16Regular />} appearance="subtle" onClick={() => setOpenForm("collaborators")}>
-              Collaborators & tasks
-            </ToolbarButton>
-            <ToolbarDivider />
-            <ToolbarButton icon={<Target16Regular />} appearance="subtle" onClick={() => setOpenForm("goals")}>
-              Goals
-            </ToolbarButton>
-            <ToolbarDivider />
-            <Switch checked={isFacilitator} onChange={(_, d) => setIsFacilitator(d.checked)} label="Facilitator view" />
-          </Toolbar>
-        ) : (
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: tokens.spacingVerticalS }}>
-            <Switch checked={isFacilitator} onChange={(_, d) => setIsFacilitator(d.checked)} label="Facilitator view" />
-          </div>
-        )}
+      <div className={`${styles.shell} ${styles.layout}`}>
+        <div className={styles.navRail}>
+          <Text weight="semibold">Workspace</Text>
+          <Menu>
+            <MenuList>
+              <div className={styles.navLabel}>Role setup</div>
+              <MenuItem onClick={() => setOpenForm("role")}>Role definition</MenuItem>
+              <MenuItem onClick={() => setOpenForm("tools")}>Tools</MenuItem>
+              <MenuItem onClick={() => setOpenForm("solo")}>Non-collab tasks</MenuItem>
+              <MenuItem onClick={() => setOpenForm("collaborators")}>Collaborators & tasks</MenuItem>
+              <MenuItem onClick={() => setOpenForm("goals")}>Goals</MenuItem>
+              <MenuDivider />
+              <MenuItem onClick={saveRoleSnapshot}>Save role</MenuItem>
+              <MenuItem onClick={resetRole}>New role</MenuItem>
+              <MenuDivider />
+              <MenuItem onClick={() => setIsFacilitator((v) => !v)}>
+                {isFacilitator ? "Exit facilitator" : "Facilitator view"}
+              </MenuItem>
+            </MenuList>
+          </Menu>
+          {savedRoles.length > 0 && (
+            <div className={styles.navGroup}>
+              <div className={styles.navLabel}>Saved roles</div>
+              {savedRoles.map((r) => (
+                <Button
+                  key={r.id}
+                  appearance="secondary"
+                  size="small"
+                  onClick={() => {
+                    setRoleName(r.roleName || "");
+                    setHeadcount(r.headcount || "");
+                    setDescription(r.description || "");
+                    setGoals(r.goals || []);
+                    setTools(r.tools || []);
+                    setSoloTasks(r.soloTasks || []);
+                    setCollaborators(r.collaborators || []);
+                    setPainPoints(r.painPoints || []);
+                    setNodePositions(r.nodePositions || {});
+                  }}
+                >
+                  {r.name}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div>
         {isFacilitator ? (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(420px, 1fr))", gap: tokens.spacingHorizontalL }}>
             <Card style={{ height: "100%" }}>
@@ -1738,6 +1815,8 @@ const App = () => {
         </div>
       </>
       )}
+      </div>
+      </div>
       <Dialog open={!!openForm} onOpenChange={(_, data) => setOpenForm(data.open ? openForm : null)}>
         <DialogSurface>
           <DialogBody>
@@ -1757,7 +1836,6 @@ const App = () => {
           </DialogBody>
         </DialogSurface>
       </Dialog>
-      </div>
     </FluentProvider>
   );
 };
