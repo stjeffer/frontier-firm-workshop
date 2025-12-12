@@ -714,6 +714,16 @@ const Diagram = React.forwardRef(
                     onClick={() => onTaskSelect?.(task.title)}
                     style={{ cursor: "pointer", pointerEvents: "all" }}
                   >
+                    <rect
+                      x={x - 4}
+                      y={y - badgeHeight / 2 - 4}
+                      width={width + 8}
+                      height={badgeHeight + 8}
+                      rx={badgeHeight / 2 + 4}
+                      fill="transparent"
+                      pointerEvents="all"
+                      onClick={() => onTaskSelect?.(task.title)}
+                    />
                     <line
                       x1={centerX}
                       y1={centerY}
@@ -745,7 +755,7 @@ const Diagram = React.forwardRef(
                       fill={visual.color}
                       opacity="0.08"
                       stroke="none"
-                      pointerEvents="none"
+                      pointerEvents="all"
                     />
                     <text
                       x={x + (side === 1 ? 12 : width - 12)}
@@ -754,7 +764,7 @@ const Diagram = React.forwardRef(
                       fontSize="12"
                       fill={tokens.colorNeutralForeground1}
                       fontWeight="700"
-                      pointerEvents="none"
+                      pointerEvents="all"
                     >
                       {label}
                     </text>
