@@ -1569,7 +1569,7 @@ const App = () => {
                           return <React.Fragment key={`collab-${idx}-${i3}`}>{renderPainBadge(p, collabs)}</React.Fragment>;
                         })}
                       </div>
-                      <Text weight="semibold" style={{ marginTop: tokens.spacingVerticalS }}>Individual tasks</Text>
+                      {/* <Text weight="semibold" style={{ marginTop: tokens.spacingVerticalS }}>Individual tasks</Text>
                       <TagGroup aria-label="Individual tasks (facilitator)" style={{ flexWrap: "wrap", gap: tokens.spacingHorizontalXS }}>
                         {(r.soloTasks || []).length === 0 && <Text className={styles.muted}>No individual tasks yet.</Text>}
                         {(r.soloTasks || []).map((t, i4) => (
@@ -1588,7 +1588,7 @@ const App = () => {
                             {t.title} ({t.frequency})
                           </Tag>
                         ))}
-                      </TagGroup>
+                      </TagGroup> */}
                     </div>
                   </div>
                 </Card>
