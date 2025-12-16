@@ -46,6 +46,7 @@ import {
   DocumentText16Regular,
   CheckmarkCircle16Regular
 } from "@fluentui/react-icons";
+import { CATALOG_URL } from "./config/catalog";
 
 const appTheme = {
   ...webLightTheme,
@@ -352,19 +353,55 @@ const severityLabel = {
   5: "Critical issue / repeated failure"
 };
 
-  const occurrencesByFrequency = {
-    daily: { weekly: 5, monthly: 22 },
-    weekly: { weekly: 1, monthly: 4.35 },
-    monthly: { weekly: 0.25, monthly: 1 },
-    adhoc: { weekly: 0, monthly: 0 }
-  };
+const businessUnitOptions = [
+  "Operations",
+  "Sales",
+  "Marketing",
+  "Finance",
+  "Product",
+  "Engineering",
+  "Customer Experience",
+  "IT",
+  "People / HR",
+  "Legal & Compliance",
+  "Supply Chain",
+  "Other"
+];
 
-  const formatMinutes = (minutes) => {
-    if (!minutes || Number.isNaN(minutes)) return "—";
-    if (minutes < 60) return `${Math.round(minutes)} mins`;
-    const hours = minutes / 60;
-    return `${hours % 1 === 0 ? hours : hours.toFixed(1)} hrs`;
-  };
+const businessUnitToSector = {
+  Operations: "operations",
+  "Supply Chain": "operations",
+  IT: "it",
+  "People / HR": "human-resources",
+  Marketing: "marketing"
+};
+
+const buildAgentUrl = (agent) => {
+  if (!agent) return "";
+  if (agent.definition_url) return agent.definition_url;
+  if (agent.path) return `https://github.com/stjeffer/agent-universe/tree/main/${agent.path}`;
+  return "";
+};
+
+const occurrencesByFrequency = {
+  daily: { weekly: 5, monthly: 22 },
+  weekly: { weekly: 1, monthly: 4.35 },
+  monthly: { weekly: 0.25, monthly: 1 },
+  adhoc: { weekly: 0, monthly: 0 }
+};
+
+const formatMinutes = (minutes) => {
+  if (!minutes || Number.isNaN(minutes)) return "—";
+  if (minutes < 60) return `${Math.round(minutes)} mins`;
+  const hours = minutes / 60;
+  return `${hours % 1 === 0 ? hours : hours.toFixed(1)} hrs`;
+};
+
+const formatFriction = (value) => {
+  if (!value) return "";
+  const spaced = value.replace(/_/g, " ");
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+};
 
 const painPalette = [
   { threshold: 1, color: "#107c10", stroke: "#0b6a0b" },
@@ -554,7 +591,9 @@ const Diagram = React.forwardRef(
       sharedToolsMap,
       painPoints,
       soloTasks,
+      helperAgents = [],
       onTaskSelect,
+      onHelperSelect,
       nodePositions,
       setNodePositions,
       expanded
@@ -580,7 +619,7 @@ const Diagram = React.forwardRef(
       else if (svgRef) svgRef.current = node;
     };
 
-    const nodes = useMemo(() => {
+    const collaboratorNodes = useMemo(() => {
       if (!collaborators.length) return [];
       return collaborators.map((collab, idx) => {
         const angle = (2 * Math.PI * idx) / collaborators.length - Math.PI / 2;
@@ -588,9 +627,23 @@ const Diagram = React.forwardRef(
         const y = centerY + radius * Math.sin(angle);
         const key = `collab-${collab.name}`;
         const override = nodePositions[key];
-        return { ...collab, tools: collab.tools || [], x: override?.x ?? x, y: override?.y ?? y, key };
+        return { ...collab, tools: collab.tools || [], x: override?.x ?? x, y: override?.y ?? y, key, isHelper: false };
       });
     }, [collaborators, nodePositions]);
+
+    const helperRadius = expanded ? 260 : 240;
+    const helperNodes = useMemo(() => {
+      if (!helperAgents.length) return [];
+      return helperAgents.map((agent, idx) => {
+        const angle = (2 * Math.PI * idx) / helperAgents.length - Math.PI / 2;
+        const x = centerX + helperRadius * Math.cos(angle);
+        const y = centerY + helperRadius * Math.sin(angle);
+        const override = nodePositions[agent.key];
+        return { ...agent, x: override?.x ?? x, y: override?.y ?? y, isHelper: true };
+      });
+    }, [helperAgents, nodePositions, helperRadius]);
+
+    const nodes = useMemo(() => [...collaboratorNodes, ...helperNodes], [collaboratorNodes, helperNodes]);
 
   useEffect(() => {
     const valid = new Set(nodes.map((n) => n.key));
@@ -697,7 +750,7 @@ const Diagram = React.forwardRef(
               <path
                 d={`M ${centerX} ${centerY} Q ${ctrlX} ${ctrlY} ${node.x} ${node.y}`}
                 fill="none"
-                stroke={tokens.colorNeutralStroke2}
+                stroke={node.isHelper ? tokens.colorPalettePinkBorderActive : tokens.colorNeutralStroke2}
                 strokeWidth="2.5"
               strokeDasharray="6 4"
               opacity="0.35"
@@ -712,14 +765,17 @@ const Diagram = React.forwardRef(
                 <g>
                   {tasksList.map((task, i) => {
                     const visual = getPainVisual(painPoints, task);
-                    const text = task; // no truncation
+                    const text = node.isHelper ? formatFriction(task) : task;
                     const width = Math.max(60, text.length * 7 + 28);
                     const x = midX - width / 2;
                     const y = startY + i * (pillHeight + gapY);
                     return (
                       <g
                         key={`${node.name}-pill-${i}`}
-                        onClick={() => onTaskSelect?.(task)}
+                        onClick={() => {
+                          if (node.isHelper) onHelperSelect?.(node);
+                          else onTaskSelect?.(task);
+                        }}
                         style={{ cursor: "pointer", pointerEvents: "all" }}
                       >
                         <rect
@@ -923,53 +979,72 @@ const Diagram = React.forwardRef(
               style={{ cursor: "grab" }}
             >
               <rect
-              width={nodeWidth}
-              height={nodeHeight}
-              rx="14"
-              fill={tokens.colorNeutralBackground1}
-              stroke={tokens.colorNeutralStroke2}
-            />
-            {(() => {
-              const { primary, soft } = nameTone(node.name);
-              const inset = 12;
-              const tile = nodeWidth - inset * 2;
-              return (
-                <>
-                  <rect x={inset} y={inset} width={tile} height={tile} rx="10" fill={tokens.colorNeutralBackground2} />
-                  <rect
-                    x={nodeWidth / 2 - 40}
-                    y={inset + 10}
-                    width={80}
-                    height={80}
-                    rx="9"
-                    fill={soft}
-                    stroke={tokens.colorNeutralStroke2}
-                  />
-                  <circle
-                    cx={nodeWidth / 2}
-                    cy={inset + 50}
-                    r={nodeAvatarR}
-                    fill={primary}
-                    stroke={tokens.colorNeutralBackground1}
-                    strokeWidth="2"
-                  />
-                  <text x={nodeWidth / 2} y={inset + 54} textAnchor="middle" fontSize="13" fill="white" fontWeight="700">
-                    {initials(node.name)}
+                width={nodeWidth}
+                height={nodeHeight}
+                rx="14"
+                fill={node.isHelper ? tokens.colorPalettePinkBackground2 : tokens.colorNeutralBackground1}
+                stroke={node.isHelper ? tokens.colorPalettePinkBorderActive : tokens.colorNeutralStroke2}
+              />
+              {(() => {
+                const { primary, soft } = nameTone(node.name);
+                const inset = 12;
+                const tile = nodeWidth - inset * 2;
+                return (
+                  <>
+                    <rect x={inset} y={inset} width={tile} height={tile} rx="10" fill={tokens.colorNeutralBackground2} />
+                    <rect
+                      x={nodeWidth / 2 - 40}
+                      y={inset + 10}
+                      width={80}
+                      height={80}
+                      rx="9"
+                      fill={soft}
+                      stroke={tokens.colorNeutralStroke2}
+                    />
+                    <circle
+                      cx={nodeWidth / 2}
+                      cy={inset + 50}
+                      r={nodeAvatarR}
+                      fill={node.isHelper ? tokens.colorPalettePinkBackground3 : primary}
+                      stroke={tokens.colorNeutralBackground1}
+                      strokeWidth="2"
+                    />
+                    <text x={nodeWidth / 2} y={inset + 54} textAnchor="middle" fontSize="13" fill="white" fontWeight="700">
+                      {initials(node.name)}
+                    </text>
+                  </>
+                );
+              })()}
+              {(() => {
+                const titleSize = node.isHelper ? (expanded ? "14" : "13") : (expanded ? "16" : "15");
+                const titleLimit = node.isHelper ? (expanded ? 22 : 18) : (expanded ? 18 : 16);
+                return (
+                  <text
+                    x={nodeWidth / 2}
+                    y={nodeHeight - 18}
+                    fontSize={titleSize}
+                    fill={tokens.colorNeutralForeground1}
+                    fontWeight="700"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                  >
+                    {truncate(node.name, titleLimit)}
                   </text>
-                </>
-              );
-            })()}
-            <text
-              x={nodeWidth / 2}
-              y={nodeHeight - 18}
-              fontSize={expanded ? "16" : "15"}
-              fill={tokens.colorNeutralForeground1}
-              fontWeight="700"
-              textAnchor="middle"
-              dominantBaseline="middle"
-            >
-              {truncate(node.name, expanded ? 18 : 16)}
-            </text>
+                );
+              })()}
+              {node.isHelper && (
+                <text
+                  x={nodeWidth / 2}
+                  y={nodeHeight - 4}
+                  fontSize="11"
+                  fill={tokens.colorNeutralForeground2}
+                  fontWeight="600"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                >
+                  Helper agent
+                </text>
+              )}
             </g>
           </g>
         ))}
@@ -1065,6 +1140,7 @@ const App = () => {
   const styles = useStyles();
   const [roleName, setRoleName] = useState("");
   const [headcount, setHeadcount] = useState("");
+  const [businessUnit, setBusinessUnit] = useState("");
   const [description, setDescription] = useState("");
   const [goals, setGoals] = useState([]);
   const [tools, setTools] = useState([]);
@@ -1095,8 +1171,13 @@ const App = () => {
   const [savedRoles, setSavedRoles] = useState([]);
   const [editingRoleId, setEditingRoleId] = useState(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [catalog, setCatalog] = useState(null);
+  const [catalogStatus, setCatalogStatus] = useState("idle"); // idle | loading | error | ready
+  const [showHelperAgents, setShowHelperAgents] = useState(false);
+  const [catalogRole, setCatalogRole] = useState("");
+  const [helperDialog, setHelperDialog] = useState(null);
 
-  const roleComplete = roleName.trim() && headcount.trim() && description.trim();
+  const roleComplete = roleName.trim() && headcount.trim() && description.trim() && businessUnit.trim();
   const toolsComplete = tools.length > 0;
   const soloComplete = soloTasks.length > 0;
   const collabComplete = collaborators.length > 0;
@@ -1106,12 +1187,88 @@ const App = () => {
   const summary = useMemo(() => ({
     role: roleName || "Not set",
     headcount: headcount || "Not set",
+    businessUnit: businessUnit || "Not set",
+    catalogRole: catalogRole || "Not set",
     description: description || "No description yet.",
     goals,
     tools,
     collaborators: collaborators.map((c) => c.name),
     painPoints
-  }), [roleName, headcount, description, goals, tools, collaborators, painPoints]);
+  }), [roleName, headcount, businessUnit, catalogRole, description, goals, tools, collaborators, painPoints]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadCatalog = async () => {
+      setCatalogStatus("loading");
+      try {
+        const res = await fetch(CATALOG_URL);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (!cancelled) {
+          setCatalog(json);
+          setCatalogStatus("ready");
+        }
+      } catch (err) {
+        console.error("Failed to load catalog", err);
+        if (!cancelled) setCatalogStatus("error");
+      }
+    };
+    loadCatalog();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const helperAgents = useMemo(() => {
+    if (!catalog || !businessUnit) return [];
+    const sector = businessUnitToSector[businessUnit];
+    if (!sector) return [];
+    let list = (catalog.agents || []).filter((a) => a.sector === sector);
+    if (businessUnit === "Supply Chain") {
+      list = list.filter((a) => (a.role || "").includes("supply-chain"));
+    }
+    if (catalogRole) {
+      list = list.filter((a) => a.role === catalogRole);
+    }
+    return list;
+  }, [catalog, businessUnit, catalogRole]);
+
+  const catalogRoles = useMemo(() => {
+    if (!catalog || !businessUnit) return [];
+    const sector = businessUnitToSector[businessUnit];
+    if (!sector) return [];
+    const seen = new Set();
+    const roles = [];
+    (catalog.agents || [])
+      .filter((a) => a.sector === sector)
+      .forEach((a) => {
+        if (!seen.has(a.role)) {
+          seen.add(a.role);
+          roles.push({ value: a.role, label: a.role_name });
+        }
+      });
+    return roles;
+  }, [catalog, businessUnit]);
+
+  useEffect(() => {
+    if (!catalogRole) return;
+    const exists = catalogRoles.some((r) => r.value === catalogRole);
+    if (!exists) setCatalogRole("");
+  }, [catalogRoles, catalogRole]);
+
+  const helperNodes = useMemo(
+    () =>
+      showHelperAgents
+        ? helperAgents.map((agent) => ({
+            ...agent,
+            name: agent.name,
+            tasks: (agent.friction_addressed || agent.tags || []).slice(0, 4),
+            key: `helper-${agent.id}`,
+            url: buildAgentUrl(agent)
+          }))
+        : [],
+    [helperAgents, showHelperAgents]
+  );
 
   const addCollaborator = () => {
     const trimmed = collabName.trim();
@@ -1263,12 +1420,14 @@ const App = () => {
       id,
       name,
       roleName,
-      headcount,
-      description,
-      goals,
-      tools,
-      soloTasks,
-      collaborators,
+      businessUnit,
+    headcount,
+    catalogRole,
+    description,
+    goals,
+    tools,
+    soloTasks,
+    collaborators,
       painPoints,
       nodePositions
     };
@@ -1278,6 +1437,7 @@ const App = () => {
     const hasContent =
       roleName ||
       headcount ||
+      businessUnit ||
       description ||
       goals.length ||
       tools.length ||
@@ -1298,6 +1458,8 @@ const App = () => {
     }
     setRoleName("");
     setHeadcount("");
+    setCatalogRole("");
+    setBusinessUnit("");
     setDescription("");
     setGoals([]);
     setTools([]);
@@ -1309,7 +1471,7 @@ const App = () => {
   };
 
   const saveRoleSnapshot = () => {
-    if (!roleName.trim() || !headcount.trim() || !description.trim() || goals.length === 0) return;
+    if (!roleName.trim() || !headcount.trim() || !businessUnit.trim() || !description.trim() || goals.length === 0) return;
     const snap = buildSnapshot();
     setSavedRoles((prev) => {
       const idx = prev.findIndex((r) => r.id === snap.id);
@@ -1326,6 +1488,8 @@ const App = () => {
     if (!snap) return;
     setRoleName(snap.roleName || "");
     setHeadcount(snap.headcount || "");
+    setCatalogRole(snap.catalogRole || "");
+    setBusinessUnit(snap.businessUnit || "");
     setDescription(snap.description || "");
     setGoals(snap.goals || []);
     setTools(snap.tools || []);
@@ -1451,6 +1615,40 @@ const App = () => {
             </Field>
             <Field label="Number of employees" required>
               <Input type="number" min={0} placeholder="e.g., 15" value={headcount} onChange={(_, d) => setHeadcount(d.value)} />
+            </Field>
+            <Field label="Business unit" required>
+              <Combobox
+                placeholder="Pick the home team"
+                value={businessUnit}
+                onOptionSelect={(_, data) => setBusinessUnit(data.optionValue || data.value || "")}
+                onChange={(_, data) => setBusinessUnit(data.value)}
+              >
+                {businessUnitOptions.map((bu) => (
+                  <Option key={bu} value={bu}>
+                    {bu}
+                  </Option>
+                ))}
+              </Combobox>
+            </Field>
+            <Field label="Role (from catalog)" hint="Narrows helper agents in the visualizer">
+              <Combobox
+                placeholder={businessUnit ? "Select a role" : "Pick a business unit first"}
+                value={catalogRole}
+                disabled={!businessUnit || catalogStatus !== "ready" || catalogRoles.length === 0}
+                onOptionSelect={(_, data) => setCatalogRole(data.optionValue || data.value || "")}
+                onChange={(_, data) => setCatalogRole(data.value)}
+              >
+                {catalogRoles.map((r) => (
+                  <Option key={r.value} value={r.value}>
+                    {r.label}
+                  </Option>
+                ))}
+              </Combobox>
+              {!businessUnit && <Text size={200} className={styles.muted}>Select a business unit to load roles.</Text>}
+              {businessUnit && catalogStatus === "loading" && <Text size={200} className={styles.muted}>Loading catalog…</Text>}
+              {businessUnit && catalogStatus === "ready" && catalogRoles.length === 0 && (
+                <Text size={200} className={styles.muted}>No catalog roles for this business unit yet.</Text>
+              )}
             </Field>
             <Field label="Description" required>
               <Textarea rows={3} placeholder="What does a typical day look like?" value={description} onChange={(_, d) => setDescription(d.value)} />
@@ -1644,7 +1842,11 @@ const App = () => {
               Goals
             </MenuItem>
             <MenuDivider />
-            <MenuItem icon={<Save16Regular />} onClick={saveRoleSnapshot} disabled={!roleName.trim() || !headcount.trim() || !description.trim() || goals.length === 0}>
+            <MenuItem
+              icon={<Save16Regular />}
+              onClick={saveRoleSnapshot}
+              disabled={!roleName.trim() || !headcount.trim() || !businessUnit.trim() || !description.trim() || goals.length === 0}
+            >
               Save role
             </MenuItem>
             <MenuItem icon={<Add16Regular />} onClick={() => setConfirmReset(true)}>
@@ -1693,6 +1895,7 @@ const App = () => {
                     description={
                       <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXXS }}>
                         <Text size={200} className={styles.muted}>Everything for this role in one place.</Text>
+                        <Text size={200}>Business unit: {r.businessUnit || "—"}</Text>
                         <Text size={200}>Headcount: {r.headcount || "—"}</Text>
                         <Text size={200} className={styles.muted} style={{ maxWidth: "480px" }}>
                           {r.description || "No description yet."}
@@ -1763,6 +1966,22 @@ const App = () => {
         ) : (
           <>
         <div className={styles.rowTwo}>
+          <Card className={styles.panelCard}>
+            <CardHeader
+              header={<Subtitle2>Role basics</Subtitle2>}
+              description={<Text className={styles.muted}>Quick reference for the role you are mapping.</Text>}
+            />
+            <div className={styles.stack}>
+              <Text weight="semibold">{roleName || "Role not set"}</Text>
+              <Text size={200}>Business unit: {businessUnit || "Not set"}</Text>
+              <Text size={200}>Catalog role: {catalogRole || "Not set"}</Text>
+              <Text size={200}>Headcount: {headcount || "—"}</Text>
+              <Text size={200} className={styles.muted}>
+                {description || "No description yet."}
+              </Text>
+            </div>
+          </Card>
+
           <Card className={styles.panelCard}>
             <CardHeader
               header={<Subtitle2>Individual (non-collaborative) tasks</Subtitle2>}
@@ -1865,12 +2084,43 @@ const App = () => {
                 <div className={styles.topNav}>
                   <div className={styles.topNavLeft}>
                     <Switch checked={diagramExpanded} onChange={(_, data) => setDiagramExpanded(data.checked)} label="Expand to full screen" />
-                    {/* {diagramExpanded && (
-                      <Button appearance="primary" icon={<Add16Regular />} onClick={() => setPainMenuOpen((prev) => !prev)}>
-                        Add pain point
-                      </Button>
-                    )} */}
+                    <Switch
+                      checked={showHelperAgents}
+                      onChange={(_, data) => setShowHelperAgents(data.checked)}
+                      label="Show helper agents"
+                      disabled={
+                        !businessUnit?.trim() ||
+                        catalogStatus !== "ready" ||
+                        helperAgents.length === 0
+                      }
+                    />
+                    {catalogStatus === "loading" && <Text size={200} className={styles.muted}>Loading helper catalog…</Text>}
+                    {catalogStatus === "ready" && businessUnit?.trim() && helperAgents.length === 0 && (
+                      <Text size={200} className={styles.muted}>No helper agents for this business unit.</Text>
+                    )}
                   </div>
+                  {showHelperAgents && helperAgents.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: tokens.spacingHorizontalS, alignItems: "center" }}>
+                      <Text size={200} className={styles.muted}>Helper links:</Text>
+                      {helperAgents.map((agent) => {
+                        const url = buildAgentUrl(agent);
+                        return (
+                          <Button
+                            key={agent.id}
+                            as={url ? "a" : "button"}
+                            href={url || undefined}
+                            target={url ? "_blank" : undefined}
+                            rel={url ? "noreferrer" : undefined}
+                            appearance="subtle"
+                            size="small"
+                            disabled={!url}
+                          >
+                            {agent.name}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
                 {diagramExpanded && painMenuOpen && (
                   <div className={styles.painModal} onClick={() => setPainMenuOpen(false)}>
@@ -2053,10 +2303,25 @@ const App = () => {
                 sharedToolsMap={sharedToolsMap}
                 painPoints={painPoints}
                 soloTasks={soloTasks}
+                helperAgents={helperNodes}
                 expanded={diagramExpanded}
                 nodePositions={nodePositions}
                 setNodePositions={setNodePositions}
                 onTaskSelect={openPainForTask}
+                onHelperSelect={(node) => {
+                  setHelperDialog({
+                    name: node.name,
+                    description: node.description,
+                    friction: node.friction_addressed,
+                    capabilities: {
+                      required: node.capabilities_required,
+                      optional: node.capabilities_optional
+                    },
+                    timeSaved: node.time_saved_hours_per_week,
+                    setup: node.setup_time_minutes,
+                    url: node.url
+                  });
+                }}
                 ref={diagramRef}
               />
               <div className={styles.stack} style={{ marginTop: tokens.spacingVerticalM }}>
@@ -2099,6 +2364,50 @@ const App = () => {
             <DialogActions>
               <Button appearance="secondary" onClick={() => setOpenForm(null)}>
                 Close
+              </Button>
+            </DialogActions>
+          </DialogBody>
+        </DialogSurface>
+      </Dialog>
+      <Dialog open={!!helperDialog} onOpenChange={(_, data) => setHelperDialog(data.open ? helperDialog : null)}>
+        <DialogSurface>
+          <DialogBody>
+            <DialogTitle>{helperDialog?.name || "Helper agent"}</DialogTitle>
+            <DialogContent>
+              <div className={styles.stack}>
+                <Text>{helperDialog?.description || "No description provided."}</Text>
+                {helperDialog?.friction?.length ? (
+                  <div style={{ display: "flex", gap: tokens.spacingHorizontalS, flexWrap: "wrap" }}>
+                    {helperDialog.friction.map((f) => (
+                      <Tag key={f} shape="rounded" appearance="outline">
+                        {formatFriction(f)}
+                      </Tag>
+                    ))}
+                  </div>
+                ) : null}
+                <Text size={200} className={styles.muted}>
+                  Required: {(helperDialog?.capabilities?.required || []).join(", ") || "None"} • Optional:{" "}
+                  {(helperDialog?.capabilities?.optional || []).join(", ") || "None"}
+                </Text>
+                <Text size={200} className={styles.muted}>
+                  Time saved: {helperDialog?.timeSaved ? `${helperDialog.timeSaved}h/week` : "—"} • Setup:{" "}
+                  {helperDialog?.setup ? `${helperDialog.setup} mins` : "—"}
+                </Text>
+              </div>
+            </DialogContent>
+            <DialogActions>
+              <Button appearance="secondary" onClick={() => setHelperDialog(null)}>
+                Close
+              </Button>
+              <Button
+                as={helperDialog?.url ? "a" : "button"}
+                href={helperDialog?.url || undefined}
+                target={helperDialog?.url ? "_blank" : undefined}
+                rel={helperDialog?.url ? "noreferrer" : undefined}
+                appearance="primary"
+                disabled={!helperDialog?.url}
+              >
+                View agent definition
               </Button>
             </DialogActions>
           </DialogBody>
