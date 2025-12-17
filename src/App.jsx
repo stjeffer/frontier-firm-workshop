@@ -746,17 +746,17 @@ const Diagram = React.forwardRef(
         const ctrlY = midY + curveOffset * Math.sin(angle + Math.PI / 2);
         const tasksList = node.tasks || [];
         return (
-            <g key={`conn-${node.name}-${idx}`}>
-              <path
-                d={`M ${centerX} ${centerY} Q ${ctrlX} ${ctrlY} ${node.x} ${node.y}`}
-                fill="none"
-                stroke={node.isHelper ? tokens.colorPalettePinkBorderActive : tokens.colorNeutralStroke2}
-                strokeWidth="2.5"
+          <g key={`conn-${node.name}-${idx}`}>
+            <path
+              d={`M ${centerX} ${centerY} Q ${ctrlX} ${ctrlY} ${node.x} ${node.y}`}
+              fill="none"
+              stroke={node.isHelper ? tokens.colorPalettePinkBorderActive : tokens.colorNeutralStroke2}
+              strokeWidth="2.5"
               strokeDasharray="6 4"
               opacity="0.35"
               style={{ pointerEvents: "none" }}
             />
-            {tasksList.length > 0 && (() => {
+            {tasksList.length > 0 && !node.isHelper && (() => {
               const pillHeight = 24;
               const gapY = 10;
               const totalHeight = tasksList.length * pillHeight + (tasksList.length - 1) * gapY;
@@ -765,17 +765,14 @@ const Diagram = React.forwardRef(
                 <g>
                   {tasksList.map((task, i) => {
                     const visual = getPainVisual(painPoints, task);
-                    const text = node.isHelper ? formatFriction(task) : task;
+                    const text = task;
                     const width = Math.max(60, text.length * 7 + 28);
                     const x = midX - width / 2;
                     const y = startY + i * (pillHeight + gapY);
                     return (
                       <g
                         key={`${node.name}-pill-${i}`}
-                        onClick={() => {
-                          if (node.isHelper) onHelperSelect?.(node);
-                          else onTaskSelect?.(task);
-                        }}
+                        onClick={() => onTaskSelect?.(task)}
                         style={{ cursor: "pointer", pointerEvents: "all" }}
                       >
                         <rect
@@ -976,6 +973,9 @@ const Diagram = React.forwardRef(
               transform={`translate(${node.x - nodeWidth / 2}, ${node.y - nodeHeight / 2})`}
               filter="url(#shadow)"
               onPointerDown={handlePointerDown(node.key)}
+              onClick={() => {
+                if (node.isHelper) onHelperSelect?.(node);
+              }}
               style={{ cursor: "grab" }}
             >
               <rect
