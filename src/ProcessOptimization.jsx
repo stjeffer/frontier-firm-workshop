@@ -63,25 +63,26 @@ const useStyles = makeStyles({
     position: "absolute",
     transform: "translate(-50%, -50%)",
     display: "flex",
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
-    gap: tokens.spacingHorizontalS,
-    padding: "8px 12px",
+    justifyContent: "center",
+    gap: tokens.spacingHorizontalXS,
+    padding: tokens.spacingHorizontalS,
     borderRadius: tokens.borderRadiusMedium,
     boxShadow: tokens.shadow8,
     backgroundColor: tokens.colorNeutralBackground1,
     border: `1px solid ${tokens.colorNeutralStroke1}`,
-    minWidth: "120px",
-    userSelect: "none",
-    height: "64px"
+    width: "110px",
+    height: "90px",
+    userSelect: "none"
   },
   nodeLabel: {
     fontWeight: 700,
-    textAlign: "left",
+    textAlign: "center",
     whiteSpace: "nowrap",
     overflow: "hidden",
     textOverflow: "ellipsis",
-    maxWidth: "180px"
+    width: "100%"
   },
   instructions: {
     display: "grid",
@@ -141,7 +142,8 @@ const useStyles = makeStyles({
     top: tokens.spacingHorizontalM,
     right: tokens.spacingHorizontalM,
     display: "flex",
-    alignItems: "center",
+    alignItems: "flex-start",
+    flexWrap: "wrap",
     gap: tokens.spacingHorizontalS,
     zIndex: 5,
     padding: tokens.spacingHorizontalS,
@@ -159,6 +161,8 @@ const severityColor = (value) => {
   if (value >= 3) return "warning";
   return "brand";
 };
+
+const typeColor = (type) => stepTypes.find((t) => t.key === type)?.color || tokens.colorNeutralStroke1;
 
 const stepTypes = [
   {
@@ -512,22 +516,8 @@ const ProcessOptimization = ({ onBack, onSaveProcess }) => {
   const selected = steps.find((s) => s.id === selectedStep?.id) || null;
 
   return (
-    <div className={styles.shell}>
-      <div className={styles.topBar}>
-        <Text weight="semibold">Process optimization canvas</Text>
-        <div style={{ display: "flex", gap: tokens.spacingHorizontalS }}>
-          {onBack && (
-            <Button appearance="secondary" onClick={onBack} icon={<ArrowHookUpRight16Regular />}>
-              Back
-            </Button>
-          )}
-          <Button appearance="primary" icon={<ArrowCircleDownRight16Regular />} onClick={handleClear}>
-            Clear
-          </Button>
-        </div>
-      </div>
-
-      <Card className={styles.canvasCard} style={{ minHeight: "82vh" }}>
+    <div className={styles.shell} style={{ padding: 0 }}>
+      <Card className={styles.canvasCard} style={{ minHeight: "92vh" }}>
         <CardHeader
           header={<Subtitle2>Process map</Subtitle2>}
           description={<Text className={styles.badge}>{steps.length} step(s) • {connections.length} connection(s)</Text>}
@@ -541,21 +531,21 @@ const ProcessOptimization = ({ onBack, onSaveProcess }) => {
           onPointerLeave={handlePointerUp}
         >
           <div className={styles.floatingControls}>
-            <Field label="Name">
+            <Field label="Name" style={{ minWidth: "160px" }}>
               <Input
                 value={processInfo.name}
                 placeholder="Process name"
                 onChange={(_, d) => setProcessInfo({ ...processInfo, name: d.value })}
               />
             </Field>
-            <Field label="Business unit">
+            <Field label="Business unit" style={{ minWidth: "140px" }}>
               <Input
                 value={processInfo.businessUnit}
                 placeholder="e.g., Ops"
                 onChange={(_, d) => setProcessInfo({ ...processInfo, businessUnit: d.value })}
               />
             </Field>
-            <Field label="Description">
+            <Field label="Description" style={{ minWidth: "200px" }}>
               <Input
                 value={processInfo.description}
                 placeholder="Short description"
@@ -563,6 +553,14 @@ const ProcessOptimization = ({ onBack, onSaveProcess }) => {
               />
             </Field>
             <div className={styles.zoomBar}>
+              {onBack && (
+                <Button appearance="secondary" onClick={onBack} icon={<ArrowHookUpRight16Regular />}>
+                  Back
+                </Button>
+              )}
+              <Button appearance="secondary" onClick={handleClear}>
+                Clear
+              </Button>
               <Button appearance="secondary" onClick={handleSave}>
                 Save
               </Button>
@@ -621,7 +619,9 @@ const ProcessOptimization = ({ onBack, onSaveProcess }) => {
                     left: `${step.x}px`,
                     top: `${step.y}px`,
                     outline: isLinking || selected?.id === step.id ? `2px solid ${tokens.colorBrandForeground1}` : "none",
-                    zIndex: selected?.id === step.id ? 2 : 1
+                    zIndex: selected?.id === step.id ? 2 : 1,
+                    borderColor: typeColor(step.type),
+                    backgroundColor: `${typeColor(step.type)}0d`
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -630,7 +630,6 @@ const ProcessOptimization = ({ onBack, onSaveProcess }) => {
                   }}
                   onPointerDown={handlePointerDown(step)}
                 >
-                  <div className={styles.glyphWrap}>{glyphForType(step.type)}</div>
                   <Text className={styles.nodeLabel}>{step.name}</Text>
                   {isLinking ? (
                     <span className={styles.badge}>Select a target to link</span>

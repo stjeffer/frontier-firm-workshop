@@ -1832,6 +1832,24 @@ const App = () => {
                   </Button>
                 </div>
               </Card>
+              <Card className={styles.panelCard}>
+                <CardHeader
+                  header={<Subtitle2>Facilitator view</Subtitle2>}
+                  description={<Text className={styles.muted}>Review saved roles and processes together.</Text>}
+                />
+                <div className={styles.stack}>
+                  <Text size={200}>Jump straight to the facilitator dashboard.</Text>
+                  <Button
+                    appearance="primary"
+                    onClick={() => {
+                      setIsFacilitator(true);
+                      setExperience("role");
+                    }}
+                  >
+                    Open facilitator
+                  </Button>
+                </div>
+              </Card>
             </div>
           </div>
         </div>
