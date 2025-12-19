@@ -1,15 +1,20 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
   Card,
   CardHeader,
+  Combobox,
   Field,
   Input,
   MenuItem,
   MenuList,
+  Option,
+  Slider,
   Subtitle2,
   Text,
+  Textarea,
   Title3,
+  Tag,
   makeStyles,
   tokens
 } from "@fluentui/react-components";
@@ -40,11 +45,13 @@ const useStyles = makeStyles({
   canvas: {
     position: "relative",
     height: "640px",
+    width: "100%",
     borderRadius: tokens.borderRadiusLarge,
     backgroundColor: tokens.colorNeutralBackground1,
     backgroundImage:
       "repeating-linear-gradient(0deg, rgba(37,99,235,0.06) 0, rgba(37,99,235,0.06) 1px, transparent 1px, transparent 22px), repeating-linear-gradient(90deg, rgba(37,99,235,0.06) 0, rgba(37,99,235,0.06) 1px, transparent 1px, transparent 22px)",
-    cursor: "crosshair"
+    cursor: "crosshair",
+    overflow: "auto"
   },
   node: {
     position: "absolute",
@@ -100,19 +107,133 @@ const useStyles = makeStyles({
     display: "flex",
     flexDirection: "column",
     gap: tokens.spacingVerticalM
+  },
+  toolbar: {
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: tokens.spacingHorizontalM
+  },
+  infoGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: tokens.spacingHorizontalM,
+    width: "100%"
+  },
+  canvasInner: {
+    position: "absolute",
+    inset: 0,
+    transformOrigin: "0 0"
+  },
+  zoomBar: {
+    display: "flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalS
   }
 });
 
+const STORAGE_KEY = "processOptimizationSession";
+
+const severityColor = (value) => {
+  if (value >= 4) return "danger";
+  if (value >= 3) return "warning";
+  return "brand";
+};
+
 const stepTypes = [
-  { key: "swimlane", label: "Swimlane", color: "#111827" },
-  { key: "trigger", label: "Trigger", color: "#22c55e" },
-  { key: "action", label: "Action", color: "#2563eb" },
-  { key: "decision", label: "Decision", color: "#facc15" },
-  { key: "parallel", label: "Parallel", color: "#7c3aed" },
-  { key: "handoff", label: "Handoff", color: "#fbbf24" },
-  { key: "end", label: "End", color: "#ef4444" },
-  { key: "exception", label: "Exception", color: "#e11d48" },
-  { key: "wait", label: "Wait", color: "#6b7280" }
+  {
+    key: "swimlane",
+    label: "Swimlane",
+    color: "#111827",
+    limit: 6,
+    fields: [
+      { key: "role", label: "Role name" },
+      { key: "department", label: "Department" }
+    ]
+  },
+  {
+    key: "trigger",
+    label: "Trigger",
+    color: "#22c55e",
+    limit: 4,
+    fields: [
+      { key: "description", label: "What starts the process?" },
+      { key: "source", label: "Source system or actor" }
+    ]
+  },
+  {
+    key: "action",
+    label: "Action",
+    color: "#2563eb",
+    limit: 10,
+    fields: [
+      { key: "description", label: "Action description" },
+      { key: "owner", label: "Owner" },
+      { key: "tool", label: "System / tool used" }
+    ]
+  },
+  {
+    key: "decision",
+    label: "Decision",
+    color: "#facc15",
+    limit: 6,
+    fields: [
+      { key: "question", label: "Question / condition" },
+      { key: "outcomes", label: "Possible outcomes" }
+    ]
+  },
+  {
+    key: "parallel",
+    label: "Parallel",
+    color: "#7c3aed",
+    limit: 4,
+    fields: [
+      { key: "tasks", label: "Parallel tasks" },
+      { key: "roles", label: "Roles involved" }
+    ]
+  },
+  {
+    key: "handoff",
+    label: "Handoff",
+    color: "#fbbf24",
+    limit: 4,
+    fields: [
+      { key: "from", label: "From role" },
+      { key: "to", label: "To role" },
+      { key: "trigger", label: "Trigger condition" }
+    ]
+  },
+  {
+    key: "end",
+    label: "End",
+    color: "#ef4444",
+    limit: 4,
+    fields: [
+      { key: "description", label: "End state description" },
+      { key: "artifact", label: "Output artifact" }
+    ]
+  },
+  {
+    key: "exception",
+    label: "Exception",
+    color: "#e11d48",
+    limit: 6,
+    fields: [
+      { key: "type", label: "Exception type" },
+      { key: "resolution", label: "Resolution path" }
+    ]
+  },
+  {
+    key: "wait",
+    label: "Wait",
+    color: "#6b7280",
+    limit: 4,
+    fields: [
+      { key: "time", label: "Time" },
+      { key: "description", label: "Description" }
+    ]
+  }
 ];
 
 const glyphForType = (type) => {
@@ -185,16 +306,77 @@ const glyphForType = (type) => {
 const ProcessOptimization = ({ onBack }) => {
   const styles = useStyles();
   const canvasRef = useRef(null);
+  const contentRef = useRef(null);
   const [steps, setSteps] = useState([]);
   const [connections, setConnections] = useState([]);
   const [contextMenu, setContextMenu] = useState(null);
   const [linkingFrom, setLinkingFrom] = useState(null);
   const [selectedStep, setSelectedStep] = useState(null);
   const [dragging, setDragging] = useState(null);
+  const [zoom, setZoom] = useState(1);
+  const [processInfo, setProcessInfo] = useState({ name: "", description: "", businessUnit: "" });
+  const [painForm, setPainForm] = useState({ title: "", stepId: "", severity: 3, description: "" });
+  const [painPoints, setPainPoints] = useState([]);
+  const baseWidth = 1400;
+  const baseHeight = 900;
+  const typeCounts = useMemo(() => {
+    return steps.reduce((acc, step) => {
+      acc[step.type] = (acc[step.type] || 0) + 1;
+      return acc;
+    }, {});
+  }, [steps]);
+
+  useEffect(() => {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw);
+      setSteps(
+        (parsed.steps || []).map((s) => {
+          const def = stepTypes.find((d) => d.key === s.type);
+          const meta = (def?.fields || []).reduce(
+            (acc, f) => ({ ...acc, [f.key]: s.meta?.[f.key] ?? "" }),
+            {}
+          );
+          return { ...s, meta };
+        })
+      );
+      setConnections(parsed.connections || []);
+      setProcessInfo(parsed.processInfo || { name: "", description: "", businessUnit: "" });
+      setPainPoints(parsed.painPoints || []);
+      setZoom(parsed.zoom || 1);
+    } catch (err) {
+      console.warn("Failed to load saved process session", err);
+    }
+  }, []);
+
+  const clampZoom = (val) => Math.min(2, Math.max(0.5, val));
+  const handleZoom = (delta) => setZoom((z) => clampZoom(z + delta));
+
+  const handleSave = () => {
+    const payload = {
+      steps,
+      connections,
+      processInfo,
+      painPoints,
+      zoom
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  };
+
+  const handleClear = () => {
+    setSteps([]);
+    setConnections([]);
+    setPainPoints([]);
+    setSelectedStep(null);
+    setLinkingFrom(null);
+  };
 
   const addStep = (type, x, y) => {
     const def = stepTypes.find((s) => s.key === type);
     if (!def) return;
+    const currentCount = steps.filter((s) => s.type === type).length;
+    if (def.limit && currentCount >= def.limit) return;
     const id = `${type}-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
     const newStep = {
       id,
@@ -202,7 +384,8 @@ const ProcessOptimization = ({ onBack }) => {
       name: def.label,
       x,
       y,
-      notes: ""
+      notes: "",
+      meta: (def.fields || []).reduce((acc, f) => ({ ...acc, [f.key]: "" }), {})
     };
     setSteps((prev) => [...prev, newStep]);
     setSelectedStep(newStep);
@@ -210,10 +393,10 @@ const ProcessOptimization = ({ onBack }) => {
 
   const handleContextMenu = (e) => {
     e.preventDefault();
-    const rect = canvasRef.current?.getBoundingClientRect();
+    const rect = contentRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = (e.clientX - rect.left) / zoom;
+    const y = (e.clientY - rect.top) / zoom;
     setContextMenu({
       pageX: e.clientX,
       pageY: e.clientY,
@@ -243,20 +426,20 @@ const ProcessOptimization = ({ onBack }) => {
 
   const handlePointerDown = (step) => (e) => {
     e.preventDefault();
-    const rect = canvasRef.current?.getBoundingClientRect();
+    const rect = contentRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const offsetX = e.clientX - rect.left - step.x;
-    const offsetY = e.clientY - rect.top - step.y;
+    const offsetX = (e.clientX - rect.left) / zoom - step.x;
+    const offsetY = (e.clientY - rect.top) / zoom - step.y;
     setDragging({ id: step.id, offsetX, offsetY });
     e.currentTarget.setPointerCapture?.(e.pointerId);
   };
 
   const handlePointerMove = (e) => {
     if (!dragging) return;
-    const rect = canvasRef.current?.getBoundingClientRect();
+    const rect = contentRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const nextX = e.clientX - rect.left - dragging.offsetX;
-    const nextY = e.clientY - rect.top - dragging.offsetY;
+    const nextX = (e.clientX - rect.left) / zoom - dragging.offsetX;
+    const nextY = (e.clientY - rect.top) / zoom - dragging.offsetY;
     updateStepPosition(dragging.id, nextX, nextY);
   };
 
@@ -278,6 +461,27 @@ const ProcessOptimization = ({ onBack }) => {
     }).filter(Boolean);
   }, [connections, steps]);
 
+  const stepOptions = useMemo(
+    () => steps.map((s) => ({ value: s.id, label: s.name || s.type })),
+    [steps]
+  );
+
+  const addPainPoint = () => {
+    const title = painForm.title.trim();
+    if (!title) return;
+    setPainPoints((prev) => [
+      ...prev,
+      {
+        id: `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+        title,
+        stepId: painForm.stepId,
+        severity: painForm.severity,
+        description: painForm.description.trim()
+      }
+    ]);
+    setPainForm({ title: "", stepId: "", severity: 3, description: "" });
+  };
+
   const closeContextMenu = () => setContextMenu(null);
 
   const selected = steps.find((s) => s.id === selectedStep?.id) || null;
@@ -297,11 +501,61 @@ const ProcessOptimization = ({ onBack }) => {
               Back to start
             </Button>
           )}
-          <Button appearance="primary" icon={<ArrowCircleDownRight16Regular />} onClick={() => setSteps([])}>
+          <Button appearance="primary" icon={<ArrowCircleDownRight16Regular />} onClick={handleClear}>
             Clear steps
           </Button>
         </div>
       </div>
+
+      <Card>
+        <CardHeader
+          header={<Subtitle2>Process details</Subtitle2>}
+          description={<Text className={styles.badge}>Name • Description • Business unit</Text>}
+        />
+        <div className={styles.toolbar}>
+          <div className={styles.infoGrid}>
+            <Field label="Process name">
+              <Input
+                value={processInfo.name}
+                placeholder="e.g., Vendor onboarding"
+                onChange={(_, d) => setProcessInfo({ ...processInfo, name: d.value })}
+              />
+            </Field>
+            <Field label="Business unit">
+              <Input
+                value={processInfo.businessUnit}
+                placeholder="e.g., Operations"
+                onChange={(_, d) => setProcessInfo({ ...processInfo, businessUnit: d.value })}
+              />
+            </Field>
+            <Field label="Description">
+              <Textarea
+                value={processInfo.description}
+                placeholder="Summarize the process"
+                onChange={(_, d) => setProcessInfo({ ...processInfo, description: d.value })}
+                rows={2}
+              />
+            </Field>
+          </div>
+          <div className={styles.zoomBar}>
+            <Button appearance="secondary" onClick={handleSave}>
+              Save progress
+            </Button>
+            <Text size={200} color="neutral">Zoom</Text>
+            <Button size="small" onClick={() => handleZoom(-0.1)}>-</Button>
+            <Slider
+              min={0.5}
+              max={2}
+              step={0.1}
+              value={zoom}
+              onChange={(_, data) => setZoom(clampZoom(data.value))}
+              style={{ width: "140px" }}
+            />
+            <Button size="small" onClick={() => handleZoom(0.1)}>+</Button>
+            <Text size={200} color="neutral">{Math.round(zoom * 100)}%</Text>
+          </div>
+        </div>
+      </Card>
 
       <div className={styles.instructions}>
         <Card>
@@ -352,12 +606,27 @@ const ProcessOptimization = ({ onBack }) => {
                     placeholder="Add context for this step"
                   />
                 </Field>
+                {(stepTypes.find((t) => t.key === selected.type)?.fields || []).map((field) => (
+                  <Field key={field.key} label={field.label}>
+                    <Input
+                      value={selected.meta?.[field.key] || ""}
+                      onChange={(_, data) =>
+                        setSteps((prev) =>
+                          prev.map((s) =>
+                            s.id === selected.id ? { ...s, meta: { ...(s.meta || {}), [field.key]: data.value } } : s
+                          )
+                        )
+                      }
+                    />
+                  </Field>
+                ))}
                 <Button
                   icon={<Dismiss16Regular />}
                   appearance="secondary"
                   onClick={() => {
                     setSteps((prev) => prev.filter((s) => s.id !== selected.id));
                     setConnections((prev) => prev.filter((c) => c.from !== selected.id && c.to !== selected.id));
+                    setPainPoints((prev) => prev.filter((p) => p.stepId !== selected.id));
                     setSelectedStep(null);
                   }}
                 >
@@ -369,6 +638,67 @@ const ProcessOptimization = ({ onBack }) => {
                 Select a step to edit its label or notes.
               </Text>
             )}
+          </div>
+        </Card>
+        <Card>
+          <CardHeader header={<Subtitle2>Pain points</Subtitle2>} description={<Text className={styles.badge}>Label friction per step</Text>} />
+          <div className={styles.inspector}>
+            <Field label="Label">
+              <Input
+                value={painForm.title}
+                placeholder="e.g., Approval delay"
+                onChange={(_, d) => setPainForm({ ...painForm, title: d.value })}
+              />
+            </Field>
+            <Field label="Linked step (optional)">
+              <Combobox
+                value={painForm.stepId}
+                onOptionSelect={(_, data) => setPainForm({ ...painForm, stepId: data.optionValue || data.value || "" })}
+                onChange={(_, d) => setPainForm({ ...painForm, stepId: d.value })}
+                placeholder="Select a step"
+              >
+                {stepOptions.map((opt) => (
+                  <Option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </Option>
+                ))}
+              </Combobox>
+            </Field>
+            <Field label={`Severity (${painForm.severity}/5)`}>
+              <Slider min={1} max={5} step={1} value={painForm.severity} onChange={(_, d) => setPainForm({ ...painForm, severity: d.value })} />
+            </Field>
+            <Field label="Description">
+              <Textarea
+                rows={2}
+                value={painForm.description}
+                onChange={(_, d) => setPainForm({ ...painForm, description: d.value })}
+                placeholder="Impact, frequency, or notes"
+              />
+            </Field>
+            <div style={{ display: "flex", gap: tokens.spacingHorizontalS }}>
+              <Button appearance="primary" onClick={addPainPoint} disabled={!painForm.title.trim()}>
+                Add pain point
+              </Button>
+              <Button appearance="secondary" onClick={() => setPainForm({ title: "", stepId: "", severity: 3, description: "" })}>
+                Reset
+              </Button>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: tokens.spacingHorizontalXS }}>
+              {painPoints.length === 0 && <Text className={styles.muted}>No pain points yet.</Text>}
+              {painPoints.map((p) => (
+                <Tag
+                  key={p.id}
+                  shape="rounded"
+                  appearance="outline"
+                  color={severityColor(p.severity)}
+                  dismissible
+                  onDismiss={() => setPainPoints((prev) => prev.filter((pp) => pp.id !== p.id))}
+                >
+                  {p.title}
+                  {p.stepId ? ` • ${steps.find((s) => s.id === p.stepId)?.name || "Step"}` : ""}
+                </Tag>
+              ))}
+            </div>
           </div>
         </Card>
       </div>
@@ -386,51 +716,75 @@ const ProcessOptimization = ({ onBack }) => {
           onPointerUp={handlePointerUp}
           onPointerLeave={handlePointerUp}
         >
-          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-            {connectionPaths.map((conn) => (
-              <g key={conn.id} style={{ pointerEvents: "none" }}>
-                <path
-                  d={conn.d}
-                  fill="none"
-                  stroke={tokens.colorNeutralStroke2}
-                  strokeWidth="3"
-                  strokeDasharray="6 4"
-                />
-                <circle cx={conn.to.x} cy={conn.to.y} r="6" fill={tokens.colorNeutralStroke2} />
-              </g>
-            ))}
-          </svg>
+          <div
+            ref={contentRef}
+            className={styles.canvasInner}
+            style={{ transform: `scale(${zoom})`, width: `${baseWidth}px`, height: `${baseHeight}px` }}
+          >
+            <svg
+              width={baseWidth}
+              height={baseHeight}
+              viewBox={`0 0 ${baseWidth} ${baseHeight}`}
+              style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+            >
+              {connectionPaths.map((conn) => (
+                <g key={conn.id} style={{ pointerEvents: "none" }}>
+                  <path
+                    d={conn.d}
+                    fill="none"
+                    stroke={tokens.colorNeutralStroke2}
+                    strokeWidth="3"
+                    strokeDasharray="6 4"
+                  />
+                  <circle cx={conn.to.x} cy={conn.to.y} r="6" fill={tokens.colorNeutralStroke2} />
+                </g>
+              ))}
+            </svg>
 
-          {steps.map((step) => {
-            const isLinking = linkingFrom === step.id;
-            return (
-              <div
-                key={step.id}
-                className={styles.node}
-                style={{
-                  left: `${step.x}px`,
-                  top: `${step.y}px`,
-                  outline: isLinking || selected?.id === step.id ? `2px solid ${tokens.colorBrandForeground1}` : "none",
-                  zIndex: selected?.id === step.id ? 2 : 1
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedStep(step);
-                  handleStartLink(step.id);
-                }}
-                onPointerDown={handlePointerDown(step)}
-              >
-                <div className={styles.glyphWrap}>{glyphForType(step.type)}</div>
-                <Text className={styles.nodeLabel}>{step.name}</Text>
-                {step.notes ? <Text size={200} color="neutral">{step.notes}</Text> : null}
-                {isLinking ? (
-                  <span className={styles.badge}>Select a target to link</span>
-                ) : (
-                  <span className={styles.badge}>Click to connect</span>
-                )}
-              </div>
-            );
-          })}
+            {steps.map((step) => {
+              const isLinking = linkingFrom === step.id;
+              return (
+                <div
+                  key={step.id}
+                  className={styles.node}
+                  style={{
+                    left: `${step.x}px`,
+                    top: `${step.y}px`,
+                    outline: isLinking || selected?.id === step.id ? `2px solid ${tokens.colorBrandForeground1}` : "none",
+                    zIndex: selected?.id === step.id ? 2 : 1
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedStep(step);
+                    handleStartLink(step.id);
+                  }}
+                  onPointerDown={handlePointerDown(step)}
+                >
+                  <div className={styles.glyphWrap}>{glyphForType(step.type)}</div>
+                  <Text className={styles.nodeLabel}>{step.name}</Text>
+                  {step.notes ? <Text size={200} color="neutral">{step.notes}</Text> : null}
+                  {step.meta &&
+                    (stepTypes.find((t) => t.key === step.type)?.fields || []).map((field) =>
+                      step.meta?.[field.key] ? (
+                        <Text key={field.key} size={200} color="neutral">
+                          {field.label}: {step.meta[field.key]}
+                        </Text>
+                      ) : null
+                    )}
+                  {painPoints.filter((p) => p.stepId === step.id).map((p) => (
+                    <Tag key={p.id} color={severityColor(p.severity)} size="small" appearance="outline">
+                      {p.title}
+                    </Tag>
+                  ))}
+                  {isLinking ? (
+                    <span className={styles.badge}>Select a target to link</span>
+                  ) : (
+                    <span className={styles.badge}>Click to connect</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </Card>
 
@@ -447,12 +801,18 @@ const ProcessOptimization = ({ onBack }) => {
             {stepTypes.map((type) => (
               <MenuItem
                 key={type.key}
+                disabled={type.limit ? (typeCounts[type.key] || 0) >= type.limit : false}
                 onClick={() => {
                   addStep(type.key, contextMenu.canvasX, contextMenu.canvasY);
                   closeContextMenu();
                 }}
               >
                 {type.label}
+                {type.limit ? (
+                  <span style={{ marginLeft: tokens.spacingHorizontalXS, color: tokens.colorNeutralForeground3 }}>
+                    ({Math.max(0, type.limit - (typeCounts[type.key] || 0))} left)
+                  </span>
+                ) : null}
               </MenuItem>
             ))}
           </MenuList>
