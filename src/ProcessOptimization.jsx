@@ -15,6 +15,12 @@ import {
   Textarea,
   Title3,
   Tag,
+  Dialog,
+  DialogSurface,
+  DialogBody,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   makeStyles,
   tokens
 } from "@fluentui/react-components";
@@ -57,20 +63,25 @@ const useStyles = makeStyles({
     position: "absolute",
     transform: "translate(-50%, -50%)",
     display: "flex",
-    flexDirection: "column",
+    flexDirection: "row",
     alignItems: "center",
-    gap: tokens.spacingVerticalXS,
-    padding: tokens.spacingHorizontalS,
+    gap: tokens.spacingHorizontalS,
+    padding: "8px 12px",
     borderRadius: tokens.borderRadiusMedium,
     boxShadow: tokens.shadow8,
     backgroundColor: tokens.colorNeutralBackground1,
     border: `1px solid ${tokens.colorNeutralStroke1}`,
-    minWidth: "140px",
-    userSelect: "none"
+    minWidth: "120px",
+    userSelect: "none",
+    height: "64px"
   },
   nodeLabel: {
     fontWeight: 700,
-    textAlign: "center"
+    textAlign: "left",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    maxWidth: "180px"
   },
   instructions: {
     display: "grid",
@@ -88,11 +99,12 @@ const useStyles = makeStyles({
     fontSize: "12px"
   },
   glyphWrap: {
-    width: "104px",
-    height: "88px",
+    width: "56px",
+    height: "56px",
     display: "flex",
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    flexShrink: 0
   },
   contextMenu: {
     position: "fixed",
@@ -107,13 +119,6 @@ const useStyles = makeStyles({
     display: "flex",
     flexDirection: "column",
     gap: tokens.spacingVerticalM
-  },
-  toolbar: {
-    display: "flex",
-    flexWrap: "wrap",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: tokens.spacingHorizontalM
   },
   infoGrid: {
     display: "grid",
@@ -130,6 +135,20 @@ const useStyles = makeStyles({
     display: "flex",
     alignItems: "center",
     gap: tokens.spacingHorizontalS
+  },
+  floatingControls: {
+    position: "absolute",
+    top: tokens.spacingHorizontalM,
+    right: tokens.spacingHorizontalM,
+    display: "flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalS,
+    zIndex: 5,
+    padding: tokens.spacingHorizontalS,
+    borderRadius: tokens.borderRadiusLarge,
+    boxShadow: tokens.shadow16,
+    backgroundColor: tokens.colorNeutralBackground1,
+    border: `1px solid ${tokens.colorNeutralStroke2}`
   }
 });
 
@@ -303,7 +322,7 @@ const glyphForType = (type) => {
   }
 };
 
-const ProcessOptimization = ({ onBack }) => {
+const ProcessOptimization = ({ onBack, onSaveProcess }) => {
   const styles = useStyles();
   const canvasRef = useRef(null);
   const contentRef = useRef(null);
@@ -325,6 +344,8 @@ const ProcessOptimization = ({ onBack }) => {
       return acc;
     }, {});
   }, [steps]);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [painOpen, setPainOpen] = useState(false);
 
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -354,14 +375,18 @@ const ProcessOptimization = ({ onBack }) => {
   const handleZoom = (delta) => setZoom((z) => clampZoom(z + delta));
 
   const handleSave = () => {
+    const id = processInfo.id || `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
     const payload = {
+      id,
       steps,
       connections,
-      processInfo,
+      processInfo: { ...processInfo, id },
       painPoints,
       zoom
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    setProcessInfo((prev) => ({ ...prev, id }));
+    onSaveProcess?.(payload);
   };
 
   const handleClear = () => {
@@ -489,221 +514,20 @@ const ProcessOptimization = ({ onBack }) => {
   return (
     <div className={styles.shell}>
       <div className={styles.topBar}>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <Title3>Process optimization canvas</Title3>
-          <Text size={200} color="neutral">
-            Right-click anywhere to drop a step, then click two steps in sequence to draw a connection.
-          </Text>
-        </div>
+        <Text weight="semibold">Process optimization canvas</Text>
         <div style={{ display: "flex", gap: tokens.spacingHorizontalS }}>
           {onBack && (
             <Button appearance="secondary" onClick={onBack} icon={<ArrowHookUpRight16Regular />}>
-              Back to start
+              Back
             </Button>
           )}
           <Button appearance="primary" icon={<ArrowCircleDownRight16Regular />} onClick={handleClear}>
-            Clear steps
+            Clear
           </Button>
         </div>
       </div>
 
-      <Card>
-        <CardHeader
-          header={<Subtitle2>Process details</Subtitle2>}
-          description={<Text className={styles.badge}>Name • Description • Business unit</Text>}
-        />
-        <div className={styles.toolbar}>
-          <div className={styles.infoGrid}>
-            <Field label="Process name">
-              <Input
-                value={processInfo.name}
-                placeholder="e.g., Vendor onboarding"
-                onChange={(_, d) => setProcessInfo({ ...processInfo, name: d.value })}
-              />
-            </Field>
-            <Field label="Business unit">
-              <Input
-                value={processInfo.businessUnit}
-                placeholder="e.g., Operations"
-                onChange={(_, d) => setProcessInfo({ ...processInfo, businessUnit: d.value })}
-              />
-            </Field>
-            <Field label="Description">
-              <Textarea
-                value={processInfo.description}
-                placeholder="Summarize the process"
-                onChange={(_, d) => setProcessInfo({ ...processInfo, description: d.value })}
-                rows={2}
-              />
-            </Field>
-          </div>
-          <div className={styles.zoomBar}>
-            <Button appearance="secondary" onClick={handleSave}>
-              Save progress
-            </Button>
-            <Text size={200} color="neutral">Zoom</Text>
-            <Button size="small" onClick={() => handleZoom(-0.1)}>-</Button>
-            <Slider
-              min={0.5}
-              max={2}
-              step={0.1}
-              value={zoom}
-              onChange={(_, data) => setZoom(clampZoom(data.value))}
-              style={{ width: "140px" }}
-            />
-            <Button size="small" onClick={() => handleZoom(0.1)}>+</Button>
-            <Text size={200} color="neutral">{Math.round(zoom * 100)}%</Text>
-          </div>
-        </div>
-      </Card>
-
-      <div className={styles.instructions}>
-        <Card>
-          <CardHeader
-            header={<Subtitle2>How it works</Subtitle2>}
-            description={<Text className={styles.badge}>Right-click to add • Click to connect • Drag to move</Text>}
-          />
-          <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalS }}>
-            <Text size={200}>Use the canvas on the right to lay out each step in your workflow.</Text>
-            <Text size={200}>Start a connection by clicking a step; click a second step to finish the link.</Text>
-            <Text size={200}>Drag steps to tidy the flow. The legend below mirrors the process shapes you shared.</Text>
-          </div>
-        </Card>
-        <Card>
-          <CardHeader header={<Subtitle2>Legend</Subtitle2>} description={<Text className={styles.badge}>Nine process primitives</Text>} />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: tokens.spacingHorizontalM }}>
-            {stepTypes.map((type) => (
-              <div key={type.key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: tokens.spacingVerticalXS }}>
-                <div className={styles.glyphWrap}>{glyphForType(type.key)}</div>
-                <Text weight="semibold">{type.label}</Text>
-              </div>
-            ))}
-          </div>
-        </Card>
-        <Card>
-          <CardHeader header={<Subtitle2>Inspector</Subtitle2>} description={<Text className={styles.badge}>Edit selected step</Text>} />
-          <div className={styles.inspector}>
-            {selected ? (
-              <>
-                <Field label="Label">
-                  <Input
-                    value={selected.name}
-                    onChange={(_, data) =>
-                      setSteps((prev) =>
-                        prev.map((s) => (s.id === selected.id ? { ...s, name: data.value } : s))
-                      )
-                    }
-                  />
-                </Field>
-                <Field label="Notes">
-                  <Input
-                    value={selected.notes || ""}
-                    onChange={(_, data) =>
-                      setSteps((prev) =>
-                        prev.map((s) => (s.id === selected.id ? { ...s, notes: data.value } : s))
-                      )
-                    }
-                    placeholder="Add context for this step"
-                  />
-                </Field>
-                {(stepTypes.find((t) => t.key === selected.type)?.fields || []).map((field) => (
-                  <Field key={field.key} label={field.label}>
-                    <Input
-                      value={selected.meta?.[field.key] || ""}
-                      onChange={(_, data) =>
-                        setSteps((prev) =>
-                          prev.map((s) =>
-                            s.id === selected.id ? { ...s, meta: { ...(s.meta || {}), [field.key]: data.value } } : s
-                          )
-                        )
-                      }
-                    />
-                  </Field>
-                ))}
-                <Button
-                  icon={<Dismiss16Regular />}
-                  appearance="secondary"
-                  onClick={() => {
-                    setSteps((prev) => prev.filter((s) => s.id !== selected.id));
-                    setConnections((prev) => prev.filter((c) => c.from !== selected.id && c.to !== selected.id));
-                    setPainPoints((prev) => prev.filter((p) => p.stepId !== selected.id));
-                    setSelectedStep(null);
-                  }}
-                >
-                  Remove step
-                </Button>
-              </>
-            ) : (
-              <Text size={200} color="neutral">
-                Select a step to edit its label or notes.
-              </Text>
-            )}
-          </div>
-        </Card>
-        <Card>
-          <CardHeader header={<Subtitle2>Pain points</Subtitle2>} description={<Text className={styles.badge}>Label friction per step</Text>} />
-          <div className={styles.inspector}>
-            <Field label="Label">
-              <Input
-                value={painForm.title}
-                placeholder="e.g., Approval delay"
-                onChange={(_, d) => setPainForm({ ...painForm, title: d.value })}
-              />
-            </Field>
-            <Field label="Linked step (optional)">
-              <Combobox
-                value={painForm.stepId}
-                onOptionSelect={(_, data) => setPainForm({ ...painForm, stepId: data.optionValue || data.value || "" })}
-                onChange={(_, d) => setPainForm({ ...painForm, stepId: d.value })}
-                placeholder="Select a step"
-              >
-                {stepOptions.map((opt) => (
-                  <Option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </Option>
-                ))}
-              </Combobox>
-            </Field>
-            <Field label={`Severity (${painForm.severity}/5)`}>
-              <Slider min={1} max={5} step={1} value={painForm.severity} onChange={(_, d) => setPainForm({ ...painForm, severity: d.value })} />
-            </Field>
-            <Field label="Description">
-              <Textarea
-                rows={2}
-                value={painForm.description}
-                onChange={(_, d) => setPainForm({ ...painForm, description: d.value })}
-                placeholder="Impact, frequency, or notes"
-              />
-            </Field>
-            <div style={{ display: "flex", gap: tokens.spacingHorizontalS }}>
-              <Button appearance="primary" onClick={addPainPoint} disabled={!painForm.title.trim()}>
-                Add pain point
-              </Button>
-              <Button appearance="secondary" onClick={() => setPainForm({ title: "", stepId: "", severity: 3, description: "" })}>
-                Reset
-              </Button>
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: tokens.spacingHorizontalXS }}>
-              {painPoints.length === 0 && <Text className={styles.muted}>No pain points yet.</Text>}
-              {painPoints.map((p) => (
-                <Tag
-                  key={p.id}
-                  shape="rounded"
-                  appearance="outline"
-                  color={severityColor(p.severity)}
-                  dismissible
-                  onDismiss={() => setPainPoints((prev) => prev.filter((pp) => pp.id !== p.id))}
-                >
-                  {p.title}
-                  {p.stepId ? ` • ${steps.find((s) => s.id === p.stepId)?.name || "Step"}` : ""}
-                </Tag>
-              ))}
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      <Card className={styles.canvasCard}>
+      <Card className={styles.canvasCard} style={{ minHeight: "82vh" }}>
         <CardHeader
           header={<Subtitle2>Process map</Subtitle2>}
           description={<Text className={styles.badge}>{steps.length} step(s) • {connections.length} connection(s)</Text>}
@@ -716,6 +540,52 @@ const ProcessOptimization = ({ onBack }) => {
           onPointerUp={handlePointerUp}
           onPointerLeave={handlePointerUp}
         >
+          <div className={styles.floatingControls}>
+            <Field label="Name">
+              <Input
+                value={processInfo.name}
+                placeholder="Process name"
+                onChange={(_, d) => setProcessInfo({ ...processInfo, name: d.value })}
+              />
+            </Field>
+            <Field label="Business unit">
+              <Input
+                value={processInfo.businessUnit}
+                placeholder="e.g., Ops"
+                onChange={(_, d) => setProcessInfo({ ...processInfo, businessUnit: d.value })}
+              />
+            </Field>
+            <Field label="Description">
+              <Input
+                value={processInfo.description}
+                placeholder="Short description"
+                onChange={(_, d) => setProcessInfo({ ...processInfo, description: d.value })}
+              />
+            </Field>
+            <div className={styles.zoomBar}>
+              <Button appearance="secondary" onClick={handleSave}>
+                Save
+              </Button>
+              <Button appearance="secondary" onClick={() => setInspectorOpen(true)}>
+                Inspector
+              </Button>
+              <Button appearance="secondary" onClick={() => setPainOpen(true)}>
+                Pain points
+              </Button>
+              <Text size={200} color="neutral">Zoom</Text>
+              <Button size="small" onClick={() => handleZoom(-0.1)}>-</Button>
+              <Slider
+                min={0.5}
+                max={2}
+                step={0.1}
+                value={zoom}
+                onChange={(_, data) => setZoom(clampZoom(data.value))}
+                style={{ width: "120px" }}
+              />
+              <Button size="small" onClick={() => handleZoom(0.1)}>+</Button>
+              <Text size={200} color="neutral">{Math.round(zoom * 100)}%</Text>
+            </div>
+          </div>
           <div
             ref={contentRef}
             className={styles.canvasInner}
@@ -762,20 +632,6 @@ const ProcessOptimization = ({ onBack }) => {
                 >
                   <div className={styles.glyphWrap}>{glyphForType(step.type)}</div>
                   <Text className={styles.nodeLabel}>{step.name}</Text>
-                  {step.notes ? <Text size={200} color="neutral">{step.notes}</Text> : null}
-                  {step.meta &&
-                    (stepTypes.find((t) => t.key === step.type)?.fields || []).map((field) =>
-                      step.meta?.[field.key] ? (
-                        <Text key={field.key} size={200} color="neutral">
-                          {field.label}: {step.meta[field.key]}
-                        </Text>
-                      ) : null
-                    )}
-                  {painPoints.filter((p) => p.stepId === step.id).map((p) => (
-                    <Tag key={p.id} color={severityColor(p.severity)} size="small" appearance="outline">
-                      {p.title}
-                    </Tag>
-                  ))}
                   {isLinking ? (
                     <span className={styles.badge}>Select a target to link</span>
                   ) : (
@@ -787,6 +643,151 @@ const ProcessOptimization = ({ onBack }) => {
           </div>
         </div>
       </Card>
+
+      <Dialog open={inspectorOpen} onOpenChange={(_, data) => setInspectorOpen(data.open)}>
+        <DialogSurface>
+          <DialogBody>
+            <DialogTitle>Inspector</DialogTitle>
+            <DialogContent>
+              <div className={styles.inspector}>
+                {selected ? (
+                  <>
+                    <Field label="Label">
+                      <Input
+                        value={selected.name}
+                        onChange={(_, data) =>
+                          setSteps((prev) =>
+                            prev.map((s) => (s.id === selected.id ? { ...s, name: data.value } : s))
+                          )
+                        }
+                      />
+                    </Field>
+                    <Field label="Notes">
+                      <Input
+                        value={selected.notes || ""}
+                        onChange={(_, data) =>
+                          setSteps((prev) =>
+                            prev.map((s) => (s.id === selected.id ? { ...s, notes: data.value } : s))
+                          )
+                        }
+                        placeholder="Add context for this step"
+                      />
+                    </Field>
+                    {(stepTypes.find((t) => t.key === selected.type)?.fields || []).map((field) => (
+                      <Field key={field.key} label={field.label}>
+                        <Input
+                          value={selected.meta?.[field.key] || ""}
+                          onChange={(_, data) =>
+                            setSteps((prev) =>
+                              prev.map((s) =>
+                                s.id === selected.id ? { ...s, meta: { ...(s.meta || {}), [field.key]: data.value } } : s
+                              )
+                            )
+                          }
+                        />
+                      </Field>
+                    ))}
+                    <Button
+                      icon={<Dismiss16Regular />}
+                      appearance="secondary"
+                      onClick={() => {
+                        setSteps((prev) => prev.filter((s) => s.id !== selected.id));
+                        setConnections((prev) => prev.filter((c) => c.from !== selected.id && c.to !== selected.id));
+                        setPainPoints((prev) => prev.filter((p) => p.stepId !== selected.id));
+                        setSelectedStep(null);
+                      }}
+                    >
+                      Remove step
+                    </Button>
+                  </>
+                ) : (
+                  <Text size={200} color="neutral">
+                    Select a step to edit it.
+                  </Text>
+                )}
+              </div>
+            </DialogContent>
+            <DialogActions>
+              <Button appearance="secondary" onClick={() => setInspectorOpen(false)}>
+                Close
+              </Button>
+            </DialogActions>
+          </DialogBody>
+        </DialogSurface>
+      </Dialog>
+
+      <Dialog open={painOpen} onOpenChange={(_, data) => setPainOpen(data.open)}>
+        <DialogSurface>
+          <DialogBody>
+            <DialogTitle>Pain points</DialogTitle>
+            <DialogContent>
+              <div className={styles.inspector}>
+                <Field label="Label">
+                  <Input
+                    value={painForm.title}
+                    placeholder="e.g., Approval delay"
+                    onChange={(_, d) => setPainForm({ ...painForm, title: d.value })}
+                  />
+                </Field>
+                <Field label="Linked step (optional)">
+                  <Combobox
+                    value={painForm.stepId}
+                    onOptionSelect={(_, data) => setPainForm({ ...painForm, stepId: data.optionValue || data.value || "" })}
+                    onChange={(_, d) => setPainForm({ ...painForm, stepId: d.value })}
+                    placeholder="Select a step"
+                  >
+                    {stepOptions.map((opt) => (
+                      <Option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </Option>
+                    ))}
+                  </Combobox>
+                </Field>
+                <Field label={`Severity (${painForm.severity}/5)`}>
+                  <Slider min={1} max={5} step={1} value={painForm.severity} onChange={(_, d) => setPainForm({ ...painForm, severity: d.value })} />
+                </Field>
+                <Field label="Description">
+                  <Textarea
+                    rows={2}
+                    value={painForm.description}
+                    onChange={(_, d) => setPainForm({ ...painForm, description: d.value })}
+                    placeholder="Impact, frequency, or notes"
+                  />
+                </Field>
+                <div style={{ display: "flex", gap: tokens.spacingHorizontalS }}>
+                  <Button appearance="primary" onClick={addPainPoint} disabled={!painForm.title.trim()}>
+                    Add pain point
+                  </Button>
+                  <Button appearance="secondary" onClick={() => setPainForm({ title: "", stepId: "", severity: 3, description: "" })}>
+                    Reset
+                  </Button>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: tokens.spacingHorizontalXS }}>
+                  {painPoints.length === 0 && <Text className={styles.muted}>No pain points yet.</Text>}
+                  {painPoints.map((p) => (
+                    <Tag
+                      key={p.id}
+                      shape="rounded"
+                      appearance="outline"
+                      color={severityColor(p.severity)}
+                      dismissible
+                      onDismiss={() => setPainPoints((prev) => prev.filter((pp) => pp.id !== p.id))}
+                    >
+                      {p.title}
+                      {p.stepId ? ` • ${steps.find((s) => s.id === p.stepId)?.name || "Step"}` : ""}
+                    </Tag>
+                  ))}
+                </div>
+              </div>
+            </DialogContent>
+            <DialogActions>
+              <Button appearance="secondary" onClick={() => setPainOpen(false)}>
+                Close
+              </Button>
+            </DialogActions>
+          </DialogBody>
+        </DialogSurface>
+      </Dialog>
 
       {contextMenu ? (
         <div

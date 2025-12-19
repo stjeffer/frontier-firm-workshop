@@ -1202,6 +1202,7 @@ const App = () => {
   const [catalogRole, setCatalogRole] = useState("");
   const [helperDialog, setHelperDialog] = useState(null);
   const [experience, setExperience] = useState("start");
+  const [savedProcesses, setSavedProcesses] = useState([]);
 
   const roleComplete = roleName.trim() && headcount.trim() && description.trim() && businessUnit.trim();
   const toolsComplete = tools.length > 0;
@@ -1836,7 +1837,22 @@ const App = () => {
         </div>
       )}
 
-      {experience === "process" && <ProcessOptimization onBack={() => setExperience("start")} />}
+      {experience === "process" && (
+        <ProcessOptimization
+          onBack={() => setExperience("start")}
+          onSaveProcess={(payload) => {
+            setSavedProcesses((prev) => {
+              const idx = prev.findIndex((p) => p.id === payload.id);
+              if (idx >= 0) {
+                const next = [...prev];
+                next[idx] = payload;
+                return next;
+              }
+              return [...prev, payload];
+            });
+          }}
+        />
+      )}
 
       {experience === "role" && (
         <>
@@ -1932,23 +1948,33 @@ const App = () => {
               {savedRoles.length > 0 && (
                 <div className={styles.navGroup}>
                   <div className={styles.navLabel}>Saved roles</div>
-                  {savedRoles.map((r) => (
-                    <Button
-                      key={r.id}
-                      appearance="secondary"
-                      size="small"
-                      onClick={() => loadRoleSnapshot(r)}
-                    >
-                      {r.name}
-                    </Button>
-                  ))}
-                </div>
-              )}
+              {savedRoles.map((r) => (
+                <Button
+                  key={r.id}
+                  appearance="secondary"
+                  size="small"
+                  onClick={() => loadRoleSnapshot(r)}
+                >
+                  {r.name}
+                </Button>
+              ))}
             </div>
-            <div>
-              {isFacilitator ? (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(420px, 1fr))", gap: tokens.spacingHorizontalL }}>
-                  {(savedRoles.length === 0 ? [] : savedRoles).map((r, idx) => {
+          )}
+          {savedProcesses.length > 0 && (
+            <div className={styles.navGroup}>
+              <div className={styles.navLabel}>Saved processes</div>
+              {savedProcesses.map((p) => (
+                <Button key={p.id} appearance="secondary" size="small" onClick={() => setExperience("process")}>
+                  {p.processInfo?.name || "Process"}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div>
+          {isFacilitator ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(420px, 1fr))", gap: tokens.spacingHorizontalL }}>
+              {(savedRoles.length === 0 ? [] : savedRoles).map((r, idx) => {
                     const summary = summarizePain(r.painPoints || []);
                     const sharedMap = (() => {
                       const map = {};
@@ -2023,20 +2049,51 @@ const App = () => {
                             </div>
                           </div>
                         </div>
-                      </Card>
-                    );
-                  })}
-                  {savedRoles.length === 0 && (
-                    <Card>
+                </Card>
+              );
+            })}
+            {savedRoles.length === 0 && (
+              <Card>
                       <CardHeader
                         header={<Subtitle2>No roles saved yet</Subtitle2>}
                         description={<Text className={styles.muted}>Save a role to see it here.</Text>}
                       />
-                    </Card>
-                  )}
-                </div>
-              ) : (
-                <>
+              </Card>
+            )}
+            <Card className={styles.panelCard} style={{ gridColumn: "span 2" }}>
+              <CardHeader
+                header={<Subtitle2>Saved processes</Subtitle2>}
+                description={<Text className={styles.muted}>Processes captured in the optimization canvas.</Text>}
+              />
+              <div className={styles.stack}>
+                {savedProcesses.length === 0 && <Text className={styles.muted}>No processes saved yet.</Text>}
+                {savedProcesses.map((p) => (
+                  <Card key={p.id} className={styles.collaboratorBlock}>
+                    <div className={styles.collaboratorHeader}>
+                      <Text weight="semibold">{p.processInfo?.name || "Process"}</Text>
+                      <Text size={200} className={styles.muted}>
+                        {p.processInfo?.businessUnit || "Unit not set"}
+                      </Text>
+                    </div>
+                    <Text size={200} className={styles.muted}>
+                      {p.processInfo?.description || "No description."}
+                    </Text>
+                    <Text size={200}>Steps: {p.steps?.length || 0} • Connections: {p.connections?.length || 0}</Text>
+                    <div style={{ display: "flex", gap: tokens.spacingHorizontalXS, flexWrap: "wrap" }}>
+                      {(p.steps || []).slice(0, 6).map((s) => (
+                        <Tag key={s.id} shape="rounded" appearance="outline">
+                          {s.name}
+                        </Tag>
+                      ))}
+                      {(p.steps || []).length > 6 && <Tag shape="rounded">+{(p.steps || []).length - 6} more</Tag>}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </Card>
+          </div>
+        ) : (
+          <>
                   <div className={styles.rowTwo}>
                     <Card className={styles.panelCard}>
                       <CardHeader
