@@ -24,7 +24,13 @@ import {
   makeStyles,
   tokens
 } from "@fluentui/react-components";
-import { ArrowCircleDownRight16Regular, ArrowHookUpRight16Regular, Dismiss16Regular } from "@fluentui/react-icons";
+import {
+  ArrowCircleDownRight16Regular,
+  ArrowHookUpRight16Regular,
+  Dismiss16Regular,
+  Link16Regular,
+  ArrowTrendingLines20Regular
+} from "@fluentui/react-icons";
 
 const useStyles = makeStyles({
   shell: {
@@ -82,7 +88,10 @@ const useStyles = makeStyles({
     whiteSpace: "nowrap",
     overflow: "hidden",
     textOverflow: "ellipsis",
-    width: "100%"
+    width: "100%",
+    color: tokens.colorNeutralForeground1,
+    fontSize: "12px",
+    lineHeight: "16px"
   },
   instructions: {
     display: "grid",
@@ -151,6 +160,40 @@ const useStyles = makeStyles({
     boxShadow: tokens.shadow16,
     backgroundColor: tokens.colorNeutralBackground1,
     border: `1px solid ${tokens.colorNeutralStroke2}`
+  },
+  linkHint: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    fontSize: "14px",
+    color: tokens.colorBrandForeground1,
+    pointerEvents: "none",
+    userSelect: "none"
+  },
+  linkIcon: {
+    position: "absolute",
+    top: 6,
+    left: 6,
+    width: "20px",
+    height: "20px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "999px",
+    backgroundColor: tokens.colorNeutralBackground1,
+    boxShadow: tokens.shadow4,
+    color: tokens.colorNeutralForeground2,
+    pointerEvents: "none"
+  },
+  painDot: {
+    position: "absolute",
+    bottom: 6,
+    right: 6,
+    width: "10px",
+    height: "10px",
+    borderRadius: "50%",
+    boxShadow: tokens.shadow4,
+    border: `1px solid ${tokens.colorNeutralBackground1}`
   }
 });
 
@@ -485,8 +528,13 @@ const ProcessOptimization = ({ onBack, onSaveProcess }) => {
       const to = steps.find((s) => s.id === conn.to);
       if (!from || !to) return null;
       const midX = (from.x + to.x) / 2;
-      const midY = (from.y + to.y) / 2 - 16;
-      return { ...conn, from, to, d: `M ${from.x} ${from.y} Q ${midX} ${midY} ${to.x} ${to.y}` };
+      const midY = (from.y + to.y) / 2;
+      const angle = Math.atan2(to.y - from.y, to.x - from.x);
+      const dist = Math.hypot(to.x - from.x, to.y - from.y);
+      const curveOffset = Math.min(140, Math.max(50, dist * 0.25));
+      const ctrlX = midX + curveOffset * Math.cos(angle + Math.PI / 2);
+      const ctrlY = midY + curveOffset * Math.sin(angle + Math.PI / 2);
+      return { ...conn, from, to, d: `M ${from.x} ${from.y} Q ${ctrlX} ${ctrlY} ${to.x} ${to.y}` };
     }).filter(Boolean);
   }, [connections, steps]);
 
@@ -595,6 +643,11 @@ const ProcessOptimization = ({ onBack, onSaveProcess }) => {
               viewBox={`0 0 ${baseWidth} ${baseHeight}`}
               style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
             >
+              <defs>
+                <marker id="arrowHead" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="strokeWidth">
+                  <path d="M0,0 L12,6 L0,12 z" fill={tokens.colorNeutralStroke2} />
+                </marker>
+              </defs>
               {connectionPaths.map((conn) => (
                 <g key={conn.id} style={{ pointerEvents: "none" }}>
                   <path
@@ -603,6 +656,7 @@ const ProcessOptimization = ({ onBack, onSaveProcess }) => {
                     stroke={tokens.colorNeutralStroke2}
                     strokeWidth="3"
                     strokeDasharray="6 4"
+                    markerEnd="url(#arrowHead)"
                   />
                   <circle cx={conn.to.x} cy={conn.to.y} r="6" fill={tokens.colorNeutralStroke2} />
                 </g>
@@ -621,20 +675,51 @@ const ProcessOptimization = ({ onBack, onSaveProcess }) => {
                     outline: isLinking || selected?.id === step.id ? `2px solid ${tokens.colorBrandForeground1}` : "none",
                     zIndex: selected?.id === step.id ? 2 : 1,
                     borderColor: typeColor(step.type),
-                    backgroundColor: `${typeColor(step.type)}0d`
+                    backgroundColor: tokens.colorNeutralBackground1
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedStep(step);
                     handleStartLink(step.id);
                   }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedStep(step);
+                    setInspectorOpen(true);
+                  }}
                   onPointerDown={handlePointerDown(step)}
                 >
-                  <Text className={styles.nodeLabel}>{step.name}</Text>
+                  {painPoints
+                    .filter((p) => p.stepId === step.id)
+                    .slice(0, 3)
+                    .map((p, idx) => (
+                      <span
+                        key={p.id}
+                        className={styles.painDot}
+                        title={`${p.title} (severity ${p.severity})`}
+                        style={{
+                          backgroundColor:
+                            p.severity >= 4
+                              ? tokens.colorPaletteRedBackground3
+                              : p.severity >= 3
+                              ? tokens.colorPaletteYellowBackground2
+                              : tokens.colorPaletteGreenBackground1,
+                          bottom: 6,
+                          right: 6 + idx * 12
+                        }}
+                      />
+                    ))}
+                  <div className={styles.glyphWrap}>{glyphForType(step.type)}</div>
+                  <Text className={styles.nodeLabel}>{step.name || stepTypes.find((t) => t.key === step.type)?.label || "Step"}</Text>
                   {isLinking ? (
-                    <span className={styles.badge}>Select a target to link</span>
+                    <span className={styles.linkIcon} title="Select a target to finish link">
+                      <ArrowTrendingLines20Regular />
+                    </span>
                   ) : (
-                    <span className={styles.badge}>Click to connect</span>
+                    <span className={styles.linkIcon} title="Click this step, then another to connect">
+                      <Link16Regular />
+                    </span>
                   )}
                 </div>
               );
