@@ -47,6 +47,7 @@ import {
   CheckmarkCircle16Regular
 } from "@fluentui/react-icons";
 import { CATALOG_URL } from "./config/catalog";
+import ProcessOptimization from "./ProcessOptimization";
 
 const appTheme = {
   ...webLightTheme,
@@ -306,6 +307,30 @@ const useStyles = makeStyles({
   navLabel: {
     margin: `${tokens.spacingVerticalXS} 0`,
     color: tokens.colorNeutralForeground2
+  },
+  startShell: {
+    minHeight: "100vh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: tokens.spacingHorizontalXL,
+    backgroundColor: "#eef2ff",
+    backgroundImage: "linear-gradient(135deg, rgba(37,99,235,0.28) 0%, rgba(124,58,237,0.24) 45%, rgba(236,72,153,0.2) 100%)"
+  },
+  startInner: {
+    width: "min(1200px, 100%)",
+    display: "grid",
+    gap: tokens.spacingVerticalL
+  },
+  startGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gap: tokens.spacingHorizontalM
+  },
+  startHero: {
+    display: "flex",
+    flexDirection: "column",
+    gap: tokens.spacingVerticalS
   }
 });
 
@@ -1176,6 +1201,7 @@ const App = () => {
   const [showHelperAgents, setShowHelperAgents] = useState(false);
   const [catalogRole, setCatalogRole] = useState("");
   const [helperDialog, setHelperDialog] = useState(null);
+  const [experience, setExperience] = useState("start");
 
   const roleComplete = roleName.trim() && headcount.trim() && description.trim() && businessUnit.trim();
   const toolsComplete = tools.length > 0;
@@ -1771,662 +1797,711 @@ const App = () => {
 
   return (
     <FluentProvider theme={appTheme}>
-      <div className={`${styles.shell} ${styles.layout}`}>
-        <div className={styles.navRail}>
-          <Text weight="semibold">Workspace</Text>
-          <MenuList aria-label="Workspace navigation">
-            <div className={styles.navLabel}>Role setup</div>
-            <MenuItem
-              icon={<DocumentText16Regular />}
-              onClick={() => setOpenForm("role")}
-              secondaryContent={
-                roleComplete ? (
-                  <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
-                    <CheckmarkCircle16Regular />
-                  </span>
-                ) : null
-              }
-            >
-              Role definition
-            </MenuItem>
-            <MenuItem
-              icon={<Toolbox16Regular />}
-              onClick={() => setOpenForm("tools")}
-              secondaryContent={
-                toolsComplete ? (
-                  <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
-                    <CheckmarkCircle16Regular />
-                  </span>
-                ) : null
-              }
-            >
-              Tools
-            </MenuItem>
-            <MenuItem
-              icon={<TaskListSquareLtr16Regular />}
-              onClick={() => setOpenForm("solo")}
-              secondaryContent={
-                soloComplete ? (
-                  <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
-                    <CheckmarkCircle16Regular />
-                  </span>
-                ) : null
-              }
-            >
-              Non-collab tasks
-            </MenuItem>
-            <MenuItem
-              icon={<PeopleCommunity16Regular />}
-              onClick={() => setOpenForm("collaborators")}
-              secondaryContent={
-                collabComplete ? (
-                  <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
-                    <CheckmarkCircle16Regular />
-                  </span>
-                ) : null
-              }
-            >
-              Collaborators & tasks
-            </MenuItem>
-            <MenuItem
-              icon={<Target16Regular />}
-              onClick={() => setOpenForm("goals")}
-              secondaryContent={
-                goalsComplete ? (
-                  <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
-                    <CheckmarkCircle16Regular />
-                  </span>
-                ) : null
-              }
-            >
-              Goals
-            </MenuItem>
-            <MenuDivider />
-            <MenuItem
-              icon={<Save16Regular />}
-              onClick={saveRoleSnapshot}
-              disabled={!roleName.trim() || !headcount.trim() || !businessUnit.trim() || !description.trim() || goals.length === 0}
-            >
-              Save role
-            </MenuItem>
-            <MenuItem icon={<Add16Regular />} onClick={() => setConfirmReset(true)}>
-              New role
-            </MenuItem>
-            <MenuDivider />
-            <MenuItem onClick={() => setIsFacilitator((v) => !v)}>
-              {isFacilitator ? "Exit facilitator" : "Facilitator view"}
-            </MenuItem>
-          </MenuList>
-          {savedRoles.length > 0 && (
-            <div className={styles.navGroup}>
-              <div className={styles.navLabel}>Saved roles</div>
-              {savedRoles.map((r) => (
-                <Button
-                  key={r.id}
-                  appearance="secondary"
-                  size="small"
-                  onClick={() => loadRoleSnapshot(r)}
-                >
-                  {r.name}
-                </Button>
-              ))}
-            </div>
-          )}
-        </div>
-        <div>
-        {isFacilitator ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(420px, 1fr))", gap: tokens.spacingHorizontalL }}>
-            {(savedRoles.length === 0 ? [] : savedRoles).map((r, idx) => {
-              const summary = summarizePain(r.painPoints || []);
-              const sharedMap = (() => {
-                const map = {};
-                (r.collaborators || []).forEach((c) => (c.tasks || []).forEach((t) => {
-                  map[t] = map[t] || [];
-                  map[t].push(c.name);
-                }));
-                return map;
-              })();
-              const collabPain = (r.painPoints || []).filter((p) => (sharedMap[p.task || p.title] || []).length > 0);
-              const soloPain = (r.painPoints || []).filter((p) => (sharedMap[p.task || p.title] || []).length === 0);
-              return (
-                <Card key={`${r.id}-${idx}`} style={{ height: "100%" }} className={styles.panelCard}>
-                  <CardHeader
-                    header={<Title3>{r.roleName || r.name || "Role not set"}</Title3>}
-                    description={
-                      <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXXS }}>
-                        <Text size={200} className={styles.muted}>Everything for this role in one place.</Text>
-                        <Text size={200}>Business unit: {r.businessUnit || "—"}</Text>
-                        <Text size={200}>Headcount: {r.headcount || "—"}</Text>
-                        <Text size={200} className={styles.muted} style={{ maxWidth: "480px" }}>
-                          {r.description || "No description yet."}
-                        </Text>
-                      </div>
-                    }
-                    action={
-                      <div style={{ display: "flex", gap: tokens.spacingHorizontalXS }}>
-                        <Button appearance="subtle" onClick={() => loadRoleSnapshot(r)}>
-                          Open
-                        </Button>
-                        <Button
-                          appearance="subtle"
-                          icon={<Delete16Regular />}
-                          aria-label="Delete saved role"
-                          onClick={() => deleteSavedRole(r.id)}
-                        />
-                      </div>
-                    }
-                  />
-                  <div className={styles.stack}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: tokens.spacingHorizontalM, alignItems: "flex-start", paddingRight: tokens.spacingHorizontalS }}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXS }}>
-                        <Text size={200} weight="semibold">Pain impact</Text>
-                        <div style={{ display: "flex", alignItems: "center", gap: tokens.spacingHorizontalM }}>
-                          {renderLossDonut(summary.weekly)}
-                          <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXXS }}>
-                            <Text size={200}>Weekly loss: {formatMinutes(summary.weekly)}</Text>
-                            <Text size={200}>Monthly loss: {formatMinutes(summary.monthly)}</Text>
-                            <Text size={200} color="neutral">Share of a 40h week spent in friction/pain.</Text>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <Divider />
-                    <div className={styles.stack}>
-                      <Text weight="semibold">Isolated pain points</Text>
-                      <div style={{ display: "flex", gap: tokens.spacingHorizontalS, flexWrap: "wrap" }}>
-                        {(soloPain || []).length === 0 && <Text className={styles.muted}>None captured.</Text>}
-                        {soloPain.map((p, i2) => (
-                          <React.Fragment key={`iso-${idx}-${i2}`}>{renderPainBadge(p)}</React.Fragment>
-                        ))}
-                      </div>
-                      <Text weight="semibold" style={{ marginTop: tokens.spacingVerticalS }}>
-                        Collaborative pain points
-                      </Text>
-                      <div style={{ display: "flex", gap: tokens.spacingHorizontalS, flexWrap: "wrap" }}>
-                        {(collabPain || []).length === 0 && <Text className={styles.muted}>None captured.</Text>}
-                        {collabPain.map((p, i3) => {
-                          const collabs = sharedMap[p.task || p.title] || [];
-                          return <React.Fragment key={`collab-${idx}-${i3}`}>{renderPainBadge(p, collabs)}</React.Fragment>;
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-            {savedRoles.length === 0 && (
-              <Card>
-                <CardHeader
-                  header={<Subtitle2>No roles saved yet</Subtitle2>}
-                  description={<Text className={styles.muted}>Save a role to see it here.</Text>}
-                />
-              </Card>
-            )}
-          </div>
-        ) : (
-          <>
-        <div className={styles.rowTwo}>
-          <Card className={styles.panelCard}>
-            <CardHeader
-              header={<Subtitle2>Role basics</Subtitle2>}
-              description={<Text className={styles.muted}>Quick reference for the role you are mapping.</Text>}
-            />
-            <div className={styles.stack}>
-              <Text weight="semibold">{roleName || "Role not set"}</Text>
-              <Text size={200}>Business unit: {businessUnit || "Not set"}</Text>
-              <Text size={200}>Catalog role: {catalogRole || "Not set"}</Text>
-              <Text size={200}>Headcount: {headcount || "—"}</Text>
-              <Text size={200} className={styles.muted}>
-                {description || "No description yet."}
+      {experience === "start" && (
+        <div className={styles.startShell}>
+          <div className={styles.startInner}>
+            <div className={styles.startHero}>
+              <Title3>Choose a workspace</Title3>
+              <Text size={200} color="neutral">
+                Pick between the original role augmentation mapper and the new process optimization canvas.
               </Text>
             </div>
-          </Card>
-
-          <Card className={styles.panelCard}>
-            <CardHeader
-              header={<Subtitle2>Individual (non-collaborative) tasks</Subtitle2>}
-              description={<Text className={styles.muted}>Repetitive tasks owned by this role only.</Text>}
-            />
-            <TagGroup aria-label="Individual tasks" style={{ marginTop: tokens.spacingVerticalS, flexWrap: "wrap", gap: tokens.spacingHorizontalXS }}>
-              {soloTasks.length === 0 && <Text className={styles.muted}>No individual tasks yet.</Text>}
-              {soloTasks.map((t, idx) => (
-                <Tag
-                  key={`${t.title}-${idx}`}
-                  dismissible
-                  onDismiss={() => removeSoloTask(idx)}
-                  shape="rounded"
-                  appearance="outline"
-                  onClick={(e) => {
-                    e.stopPropagation?.();
-                    openPainForTask(t.title);
-                  }}
-                  style={{ cursor: "pointer" }}
-                >
-                  <span style={{ fontWeight: 600 }}>{t.title}</span>&nbsp;
-                  <Text size={200} color="neutral">{`(${t.frequency})`}</Text>
-                </Tag>
-              ))}
-            </TagGroup>
-          </Card>
-
-          <Card className={styles.panelCard}>
-            <CardHeader header={<Subtitle2>Tools</Subtitle2>} description={<Text className={styles.muted}>Systems and instruments.</Text>} />
-            <TagGroup
-              aria-label="Tools"
-              style={{ marginTop: tokens.spacingVerticalS, display: "flex", flexWrap: "wrap", gap: tokens.spacingHorizontalXS }}
-            >
-              {tools.length === 0 && <Text className={styles.muted}>No tools yet.</Text>}
-              {tools.map((tool, idx) => (
-                <Tag
-                  key={`${tool}-${idx}`}
-                  dismissible
-                  onDismiss={() => setTools((prev) => prev.filter((_, i) => i !== idx))}
-                  shape="rounded"
-                  appearance="filled"
-                  color="brand"
-                  size="medium"
-                >
-                  {tool}
-                </Tag>
-              ))}
-            </TagGroup>
-          </Card>
-        </div>
-
-        <div className={styles.rowThree}>
-          <Card className={styles.panelCard}>
-            <CardHeader header={<Subtitle2>Collaborators & Tasks</Subtitle2>} description={<Text className={styles.muted}>Link collaborators to this role and map shared tasks.</Text>} />
-            <div className={styles.collaborators}>
-              {collaborators.length === 0 && <Text className={styles.muted}>No collaborators yet. Add one via the toolbar.</Text>}
-              {collaborators.map((collab, idx) => (
-                <Card key={collab.name + idx} className={styles.collaboratorBlock}>
-                  <div className={styles.collaboratorHeader}>
-                    <Subtitle2>{collab.name}</Subtitle2>
-                    <Button appearance="subtle" icon={<Delete16Regular />} aria-label="Remove" onClick={() => removeCollaborator(idx)} />
-                  </div>
-                  <Text size={200} className={styles.muted}>
-                    Tasks: {collab.tasks.length || 0} • Tools: {collab.tools?.length || 0}
-                  </Text>
-                </Card>
-              ))}
+            <div className={styles.startGrid}>
+              <Card className={styles.panelCard}>
+                <CardHeader
+                  header={<Subtitle2>Role augmentation</Subtitle2>}
+                  description={<Text className={styles.muted}>Map collaborators, tasks, tools, and pain points.</Text>}
+                />
+                <div className={styles.stack}>
+                  <Text size={200}>Stay with the current role and collaboration canvas.</Text>
+                  <Button appearance="primary" onClick={() => setExperience("role")}>
+                    Open role mapper
+                  </Button>
+                </div>
+              </Card>
+              <Card className={styles.panelCard}>
+                <CardHeader
+                  header={<Subtitle2>Process optimization</Subtitle2>}
+                  description={<Text className={styles.muted}>Lay out swimlanes, triggers, decisions, and more.</Text>}
+                />
+                <div className={styles.stack}>
+                  <Text size={200}>Use the process canvas with right-click step placement and drawable connections.</Text>
+                  <Button appearance="primary" onClick={() => setExperience("process")}>
+                    Open process canvas
+                  </Button>
+                </div>
+              </Card>
             </div>
-          </Card>
-
-          <Card className={styles.panelCard}>
-            <CardHeader header={<Subtitle2>Goals</Subtitle2>} description={<Text className={styles.muted}>Desired outcomes.</Text>} />
-            <TagGroup aria-label="Goals" style={{ marginTop: tokens.spacingVerticalS, flexWrap: "wrap" }}>
-              {goals.length === 0 && <Text className={styles.muted}>No goals yet.</Text>}
-              {goals.map((goal, idx) => (
-                <Tag
-                  key={`${goal}-${idx}`}
-                  dismissible
-                  onDismiss={() => setGoals(goals.filter((_, i) => i !== idx))}
-                  shape="rounded"
-                  appearance="filled"
-                  color="brand"
-                  size="medium"
-                >
-                  {goal}
-                </Tag>
-              ))}
-            </TagGroup>
-          </Card>
+          </div>
         </div>
+      )}
 
-        <div className={styles.rowFull}>
-          <Card className={`${styles.wideCard} ${styles.panelCard}`}>
-            <CardHeader
-              header={<Subtitle2>Collaboration Map</Subtitle2>}
-              description={<Text className={styles.muted}>Visio-style visualization of the role and collaborator links with shared tasks.</Text>}
-            />
-            <div className={`${styles.diagramWrap} ${diagramExpanded ? `${styles.diagramExpanded} ${styles.diagramWrapExpanded}` : ""}`}>
-              <div className={styles.overlayFooter}>
-                <div className={styles.topNav}>
-                  <div className={styles.topNavLeft}>
-                    <Switch checked={diagramExpanded} onChange={(_, data) => setDiagramExpanded(data.checked)} label="Expand to full screen" />
-                    <Switch
-                      checked={showHelperAgents}
-                      onChange={(_, data) => setShowHelperAgents(data.checked)}
-                      label="Show helper agents"
-                      disabled={
-                        !businessUnit?.trim() ||
-                        catalogStatus !== "ready" ||
-                        helperAgents.length === 0
-                      }
-                    />
-                    {catalogStatus === "loading" && <Text size={200} className={styles.muted}>Loading helper catalog…</Text>}
-                    {catalogStatus === "ready" && businessUnit?.trim() && helperAgents.length === 0 && (
-                      <Text size={200} className={styles.muted}>No helper agents for this business unit.</Text>
-                    )}
-                  </div>
-                  {showHelperAgents && helperAgents.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: tokens.spacingHorizontalS, alignItems: "center" }}>
-                      <Text size={200} className={styles.muted}>Helper links:</Text>
-                      {helperAgents.map((agent) => {
-                        const url = buildAgentUrl(agent);
-                        return (
-                          <Button
-                            key={agent.id}
-                            as={url ? "a" : "button"}
-                            href={url || undefined}
-                            target={url ? "_blank" : undefined}
-                            rel={url ? "noreferrer" : undefined}
-                            appearance="subtle"
-                            size="small"
-                            disabled={!url}
-                          >
-                            {agent.name}
-                          </Button>
-                        );
-                      })}
-                    </div>
+      {experience === "process" && <ProcessOptimization onBack={() => setExperience("start")} />}
+
+      {experience === "role" && (
+        <>
+          <div className={`${styles.shell} ${styles.layout}`}>
+            <div className={styles.navRail}>
+              <Text weight="semibold">Workspace</Text>
+              <Button appearance="secondary" size="small" onClick={() => setExperience("start")}>
+                Back to start
+              </Button>
+              <MenuList aria-label="Workspace navigation">
+                <div className={styles.navLabel}>Role setup</div>
+                <MenuItem
+                  icon={<DocumentText16Regular />}
+                  onClick={() => setOpenForm("role")}
+                  secondaryContent={
+                    roleComplete ? (
+                      <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
+                        <CheckmarkCircle16Regular />
+                      </span>
+                    ) : null
+                  }
+                >
+                  Role definition
+                </MenuItem>
+                <MenuItem
+                  icon={<Toolbox16Regular />}
+                  onClick={() => setOpenForm("tools")}
+                  secondaryContent={
+                    toolsComplete ? (
+                      <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
+                        <CheckmarkCircle16Regular />
+                      </span>
+                    ) : null
+                  }
+                >
+                  Tools
+                </MenuItem>
+                <MenuItem
+                  icon={<TaskListSquareLtr16Regular />}
+                  onClick={() => setOpenForm("solo")}
+                  secondaryContent={
+                    soloComplete ? (
+                      <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
+                        <CheckmarkCircle16Regular />
+                      </span>
+                    ) : null
+                  }
+                >
+                  Non-collab tasks
+                </MenuItem>
+                <MenuItem
+                  icon={<PeopleCommunity16Regular />}
+                  onClick={() => setOpenForm("collaborators")}
+                  secondaryContent={
+                    collabComplete ? (
+                      <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
+                        <CheckmarkCircle16Regular />
+                      </span>
+                    ) : null
+                  }
+                >
+                  Collaborators & tasks
+                </MenuItem>
+                <MenuItem
+                  icon={<Target16Regular />}
+                  onClick={() => setOpenForm("goals")}
+                  secondaryContent={
+                    goalsComplete ? (
+                      <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
+                        <CheckmarkCircle16Regular />
+                      </span>
+                    ) : null
+                  }
+                >
+                  Goals
+                </MenuItem>
+                <MenuDivider />
+                <MenuItem
+                  icon={<Save16Regular />}
+                  onClick={saveRoleSnapshot}
+                  disabled={!roleName.trim() || !headcount.trim() || !businessUnit.trim() || !description.trim() || goals.length === 0}
+                >
+                  Save role
+                </MenuItem>
+                <MenuItem icon={<Add16Regular />} onClick={() => setConfirmReset(true)}>
+                  New role
+                </MenuItem>
+                <MenuDivider />
+                <MenuItem onClick={() => setIsFacilitator((v) => !v)}>
+                  {isFacilitator ? "Exit facilitator" : "Facilitator view"}
+                </MenuItem>
+              </MenuList>
+              {savedRoles.length > 0 && (
+                <div className={styles.navGroup}>
+                  <div className={styles.navLabel}>Saved roles</div>
+                  {savedRoles.map((r) => (
+                    <Button
+                      key={r.id}
+                      appearance="secondary"
+                      size="small"
+                      onClick={() => loadRoleSnapshot(r)}
+                    >
+                      {r.name}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div>
+              {isFacilitator ? (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(420px, 1fr))", gap: tokens.spacingHorizontalL }}>
+                  {(savedRoles.length === 0 ? [] : savedRoles).map((r, idx) => {
+                    const summary = summarizePain(r.painPoints || []);
+                    const sharedMap = (() => {
+                      const map = {};
+                      (r.collaborators || []).forEach((c) => (c.tasks || []).forEach((t) => {
+                        map[t] = map[t] || [];
+                        map[t].push(c.name);
+                      }));
+                      return map;
+                    })();
+                    const collabPain = (r.painPoints || []).filter((p) => (sharedMap[p.task || p.title] || []).length > 0);
+                    const soloPain = (r.painPoints || []).filter((p) => (sharedMap[p.task || p.title] || []).length === 0);
+                    return (
+                      <Card key={`${r.id}-${idx}`} style={{ height: "100%" }} className={styles.panelCard}>
+                        <CardHeader
+                          header={<Title3>{r.roleName || r.name || "Role not set"}</Title3>}
+                          description={
+                            <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXXS }}>
+                              <Text size={200} className={styles.muted}>Everything for this role in one place.</Text>
+                              <Text size={200}>Business unit: {r.businessUnit || "—"}</Text>
+                              <Text size={200}>Headcount: {r.headcount || "—"}</Text>
+                              <Text size={200} className={styles.muted} style={{ maxWidth: "480px" }}>
+                                {r.description || "No description yet."}
+                              </Text>
+                            </div>
+                          }
+                          action={
+                            <div style={{ display: "flex", gap: tokens.spacingHorizontalXS }}>
+                              <Button appearance="subtle" onClick={() => loadRoleSnapshot(r)}>
+                                Open
+                              </Button>
+                              <Button
+                                appearance="subtle"
+                                icon={<Delete16Regular />}
+                                aria-label="Delete saved role"
+                                onClick={() => deleteSavedRole(r.id)}
+                              />
+                            </div>
+                          }
+                        />
+                        <div className={styles.stack}>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: tokens.spacingHorizontalM, alignItems: "flex-start", paddingRight: tokens.spacingHorizontalS }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXS }}>
+                              <Text size={200} weight="semibold">Pain impact</Text>
+                              <div style={{ display: "flex", alignItems: "center", gap: tokens.spacingHorizontalM }}>
+                                {renderLossDonut(summary.weekly)}
+                                <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXXS }}>
+                                  <Text size={200}>Weekly loss: {formatMinutes(summary.weekly)}</Text>
+                                  <Text size={200}>Monthly loss: {formatMinutes(summary.monthly)}</Text>
+                                  <Text size={200} color="neutral">Share of a 40h week spent in friction/pain.</Text>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <Divider />
+                          <div className={styles.stack}>
+                            <Text weight="semibold">Isolated pain points</Text>
+                            <div style={{ display: "flex", gap: tokens.spacingHorizontalS, flexWrap: "wrap" }}>
+                              {(soloPain || []).length === 0 && <Text className={styles.muted}>None captured.</Text>}
+                              {soloPain.map((p, i2) => (
+                                <React.Fragment key={`iso-${idx}-${i2}`}>{renderPainBadge(p)}</React.Fragment>
+                              ))}
+                            </div>
+                            <Text weight="semibold" style={{ marginTop: tokens.spacingVerticalS }}>
+                              Collaborative pain points
+                            </Text>
+                            <div style={{ display: "flex", gap: tokens.spacingHorizontalS, flexWrap: "wrap" }}>
+                              {(collabPain || []).length === 0 && <Text className={styles.muted}>None captured.</Text>}
+                              {collabPain.map((p, i3) => {
+                                const collabs = sharedMap[p.task || p.title] || [];
+                                return <React.Fragment key={`collab-${idx}-${i3}`}>{renderPainBadge(p, collabs)}</React.Fragment>;
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                  {savedRoles.length === 0 && (
+                    <Card>
+                      <CardHeader
+                        header={<Subtitle2>No roles saved yet</Subtitle2>}
+                        description={<Text className={styles.muted}>Save a role to see it here.</Text>}
+                      />
+                    </Card>
                   )}
                 </div>
-                {diagramExpanded && painMenuOpen && (
-                  <div className={styles.painModal} onClick={() => setPainMenuOpen(false)}>
-                    <Card
-                      appearance="filled"
-                      className={styles.painModalCard}
-                      onClick={(e) => e.stopPropagation()}
-                      style={{ padding: tokens.spacingHorizontalM }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: tokens.spacingVerticalM,
-                          width: "100%"
-                        }}
+              ) : (
+                <>
+                  <div className={styles.rowTwo}>
+                    <Card className={styles.panelCard}>
+                      <CardHeader
+                        header={<Subtitle2>Role basics</Subtitle2>}
+                        description={<Text className={styles.muted}>Quick reference for the role you are mapping.</Text>}
+                      />
+                      <div className={styles.stack}>
+                        <Text weight="semibold">{roleName || "Role not set"}</Text>
+                        <Text size={200}>Business unit: {businessUnit || "Not set"}</Text>
+                        <Text size={200}>Catalog role: {catalogRole || "Not set"}</Text>
+                        <Text size={200}>Headcount: {headcount || "—"}</Text>
+                        <Text size={200} className={styles.muted}>
+                          {description || "No description yet."}
+                        </Text>
+                      </div>
+                    </Card>
+
+                    <Card className={styles.panelCard}>
+                      <CardHeader
+                        header={<Subtitle2>Individual (non-collaborative) tasks</Subtitle2>}
+                        description={<Text className={styles.muted}>Repetitive tasks owned by this role only.</Text>}
+                      />
+                      <TagGroup aria-label="Individual tasks" style={{ marginTop: tokens.spacingVerticalS, flexWrap: "wrap", gap: tokens.spacingHorizontalXS }}>
+                        {soloTasks.length === 0 && <Text className={styles.muted}>No individual tasks yet.</Text>}
+                        {soloTasks.map((t, idx) => (
+                          <Tag
+                            key={`${t.title}-${idx}`}
+                            dismissible
+                            onDismiss={() => removeSoloTask(idx)}
+                            shape="rounded"
+                            appearance="outline"
+                            onClick={(e) => {
+                              e.stopPropagation?.();
+                              openPainForTask(t.title);
+                            }}
+                            style={{ cursor: "pointer" }}
+                          >
+                            <span style={{ fontWeight: 600 }}>{t.title}</span>&nbsp;
+                            <Text size={200} color="neutral">{`(${t.frequency})`}</Text>
+                          </Tag>
+                        ))}
+                      </TagGroup>
+                    </Card>
+
+                    <Card className={styles.panelCard}>
+                      <CardHeader header={<Subtitle2>Tools</Subtitle2>} description={<Text className={styles.muted}>Systems and instruments.</Text>} />
+                      <TagGroup
+                        aria-label="Tools"
+                        style={{ marginTop: tokens.spacingVerticalS, display: "flex", flexWrap: "wrap", gap: tokens.spacingHorizontalXS }}
                       >
-                        <Field label="Task (shared or not)">
-                          <Combobox
-                            placeholder="Select or type a task"
-                            freeform
-                            value={painForm.task}
-                            style={{ width: "100%" }}
-                            onOptionSelect={(_, data) =>
-                              setPainForm({
-                                ...painForm,
-                                task: data.optionValue || data.value || "",
-                                shared: false
-                              })
-                            }
-                            onChange={(_, data) => setPainForm({ ...painForm, task: data.value })}
+                        {tools.length === 0 && <Text className={styles.muted}>No tools yet.</Text>}
+                        {tools.map((tool, idx) => (
+                          <Tag
+                            key={`${tool}-${idx}`}
+                            dismissible
+                            onDismiss={() => setTools((prev) => prev.filter((_, i) => i !== idx))}
+                            shape="rounded"
+                            appearance="filled"
+                            color="brand"
+                            size="medium"
                           >
-                            {taskOptions.map((t) => (
-                              <Option key={t} value={t}>
-                                {t} {sharedTasksMap[t]?.length > 1 ? "(shared)" : ""}
-                              </Option>
-                            ))}
-                          </Combobox>
-                        </Field>
-                        <Field label={`Severity (${painForm.severity}/5)`} hint={severityLabel[painForm.severity]}>
-                          <Slider
-                            min={1}
-                            max={5}
-                            step={1}
-                            value={painForm.severity}
-                            onChange={(_, data) => setPainForm({ ...painForm, severity: data.value })}
-                          />
-                        </Field>
-                        <Field label="Frequency">
-                          <Combobox
-                            value={painForm.frequency}
-                            style={{ width: "100%" }}
-                            onOptionSelect={(_, data) =>
-                              setPainForm({ ...painForm, frequency: data.optionValue || data.value || "weekly" })
-                            }
-                            onChange={(_, data) => setPainForm({ ...painForm, frequency: data.value })}
+                            {tool}
+                          </Tag>
+                        ))}
+                      </TagGroup>
+                    </Card>
+                  </div>
+
+                  <div className={styles.rowThree}>
+                    <Card className={styles.panelCard}>
+                      <CardHeader header={<Subtitle2>Collaborators & Tasks</Subtitle2>} description={<Text className={styles.muted}>Link collaborators to this role and map shared tasks.</Text>} />
+                      <div className={styles.collaborators}>
+                        {collaborators.length === 0 && <Text className={styles.muted}>No collaborators yet. Add one via the toolbar.</Text>}
+                        {collaborators.map((collab, idx) => (
+                          <Card key={collab.name + idx} className={styles.collaboratorBlock}>
+                            <div className={styles.collaboratorHeader}>
+                              <Subtitle2>{collab.name}</Subtitle2>
+                              <Button appearance="subtle" icon={<Delete16Regular />} aria-label="Remove" onClick={() => removeCollaborator(idx)} />
+                            </div>
+                            <Text size={200} className={styles.muted}>
+                              Tasks: {collab.tasks.length || 0} • Tools: {collab.tools?.length || 0}
+                            </Text>
+                          </Card>
+                        ))}
+                      </div>
+                    </Card>
+
+                    <Card className={styles.panelCard}>
+                      <CardHeader header={<Subtitle2>Goals</Subtitle2>} description={<Text className={styles.muted}>Desired outcomes.</Text>} />
+                      <TagGroup aria-label="Goals" style={{ marginTop: tokens.spacingVerticalS, flexWrap: "wrap" }}>
+                        {goals.length === 0 && <Text className={styles.muted}>No goals yet.</Text>}
+                        {goals.map((goal, idx) => (
+                          <Tag
+                            key={`${goal}-${idx}`}
+                            dismissible
+                            onDismiss={() => setGoals(goals.filter((_, i) => i !== idx))}
+                            shape="rounded"
+                            appearance="filled"
+                            color="brand"
+                            size="medium"
                           >
-                            {["daily", "weekly", "monthly", "adhoc"].map((f) => (
-                              <Option key={f} value={f}>
-                                {f}
-                              </Option>
-                            ))}
-                          </Combobox>
-                        </Field>
-                        <Field label="Duration (per occurrence)">
-                          <div style={{ display: "flex", gap: tokens.spacingHorizontalXS }}>
-                            <Input
-                              type="number"
-                              min={0}
-                              placeholder="e.g., 30"
-                              value={painForm.durationValue}
-                              style={{ width: "100%" }}
-                              onChange={(_, d) => setPainForm({ ...painForm, durationValue: d.value })}
-                            />
-                            <Combobox
-                              value={painForm.durationUnit}
-                              style={{ width: "120px" }}
-                              onOptionSelect={(_, data) =>
-                                setPainForm({ ...painForm, durationUnit: data.optionValue || data.value || "minutes" })
-                              }
-                              onChange={(_, data) => setPainForm({ ...painForm, durationUnit: data.value })}
-                            >
-                              <Option value="minutes">minutes</Option>
-                              <Option value="hours">hours</Option>
-                            </Combobox>
-                          </div>
-                        </Field>
-                        <Field label="Cost / risk">
-                          <Input
-                            placeholder="$500/week"
-                            value={painForm.cost}
-                            style={{ width: "100%" }}
-                            onChange={(_, d) => setPainForm({ ...painForm, cost: d.value })}
-                          />
-                        </Field>
-                        <Field label="Friction type (max 2)">
-                          <Combobox
-                            multiselect
-                            value={painForm.frictionTypes}
-                            style={{ width: "100%" }}
-                            onOptionSelect={(_, data) => {
-                              const option = data.optionValue || data.value;
-                              if (!option) return;
-                              setPainForm((prev) => {
-                                const current = new Set(prev.frictionTypes || []);
-                                if (current.has(option)) {
-                                  current.delete(option);
-                                } else if (current.size < 2) {
-                                  current.add(option);
+                            {goal}
+                          </Tag>
+                        ))}
+                      </TagGroup>
+                    </Card>
+                  </div>
+
+                  <div className={styles.rowFull}>
+                    <Card className={`${styles.wideCard} ${styles.panelCard}`}>
+                      <CardHeader
+                        header={<Subtitle2>Collaboration Map</Subtitle2>}
+                        description={<Text className={styles.muted}>Visio-style visualization of the role and collaborator links with shared tasks.</Text>}
+                      />
+                      <div className={`${styles.diagramWrap} ${diagramExpanded ? `${styles.diagramExpanded} ${styles.diagramWrapExpanded}` : ""}`}>
+                        <div className={styles.overlayFooter}>
+                          <div className={styles.topNav}>
+                            <div className={styles.topNavLeft}>
+                              <Switch checked={diagramExpanded} onChange={(_, data) => setDiagramExpanded(data.checked)} label="Expand to full screen" />
+                              <Switch
+                                checked={showHelperAgents}
+                                onChange={(_, data) => setShowHelperAgents(data.checked)}
+                                label="Show helper agents"
+                                disabled={
+                                  !businessUnit?.trim() ||
+                                  catalogStatus !== "ready" ||
+                                  helperAgents.length === 0
                                 }
-                                return { ...prev, frictionTypes: Array.from(current) };
-                              });
-                            }}
-                          >
-                            {[
-                              "Delay (waiting for info, approvals, input)",
-                              "Rework (fixing errors, re-doing work)",
-                              "Manual effort (copy/paste, chasing info)",
-                              "Decision bottleneck (waiting for judgement)",
-                              "Handover friction (Cross-team dependencies)",
-                              "Tool mismatch (wrong or missing system)",
-                              "Compliance/ control burden (over-checking, audit steps)"
-                            ].map((f) => (
-                              <Option key={f} value={f}>
-                                {f}
-                              </Option>
-                            ))}
-                          </Combobox>
-                        </Field>
-                        <Field label="Why is it painful?">
-                          <Textarea
-                            placeholder="Describe the impact"
-                            value={painForm.description}
-                            style={{ width: "100%" }}
-                            rows={3}
-                            onChange={(_, d) => setPainForm({ ...painForm, description: d.value })}
-                          />
-                        </Field>
-                        <div style={{ display: "flex", gap: tokens.spacingHorizontalS, justifyContent: "space-between" }}>
-                          <Text size={200}>
-                            Weekly loss:{" "}
-                            {formatMinutes(
-                              (Number(painForm.durationValue) || 0) *
-                                (painForm.durationUnit === "hours" ? 60 : 1) *
-                                (occurrencesByFrequency[painForm.frequency || "weekly"]?.weekly || 0)
+                              />
+                              {catalogStatus === "loading" && <Text size={200} className={styles.muted}>Loading helper catalog…</Text>}
+                              {catalogStatus === "ready" && businessUnit?.trim() && helperAgents.length === 0 && (
+                                <Text size={200} className={styles.muted}>No helper agents for this business unit.</Text>
+                              )}
+                            </div>
+                            {showHelperAgents && helperAgents.length > 0 && (
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: tokens.spacingHorizontalS, alignItems: "center" }}>
+                                <Text size={200} className={styles.muted}>Helper links:</Text>
+                                {helperAgents.map((agent) => {
+                                  const url = buildAgentUrl(agent);
+                                  return (
+                                    <Button
+                                      key={agent.id}
+                                      as={url ? "a" : "button"}
+                                      href={url || undefined}
+                                      target={url ? "_blank" : undefined}
+                                      rel={url ? "noreferrer" : undefined}
+                                      appearance="subtle"
+                                      size="small"
+                                      disabled={!url}
+                                    >
+                                      {agent.name}
+                                    </Button>
+                                  );
+                                })}
+                              </div>
                             )}
-                          </Text>
-                          <Text size={200}>
-                            Monthly loss:{" "}
-                            {formatMinutes(
-                              (Number(painForm.durationValue) || 0) *
-                                (painForm.durationUnit === "hours" ? 60 : 1) *
-                                (occurrencesByFrequency[painForm.frequency || "weekly"]?.monthly || 0)
-                            )}
-                          </Text>
+                          </div>
+                          {diagramExpanded && painMenuOpen && (
+                            <div className={styles.painModal} onClick={() => setPainMenuOpen(false)}>
+                              <Card
+                                appearance="filled"
+                                className={styles.painModalCard}
+                                onClick={(e) => e.stopPropagation()}
+                                style={{ padding: tokens.spacingHorizontalM }}
+                              >
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: tokens.spacingVerticalM,
+                                    width: "100%"
+                                  }}
+                                >
+                                  <Field label="Task (shared or not)">
+                                    <Combobox
+                                      placeholder="Select or type a task"
+                                      freeform
+                                      value={painForm.task}
+                                      style={{ width: "100%" }}
+                                      onOptionSelect={(_, data) =>
+                                        setPainForm({
+                                          ...painForm,
+                                          task: data.optionValue || data.value || "",
+                                          shared: false
+                                        })
+                                      }
+                                      onChange={(_, data) => setPainForm({ ...painForm, task: data.value })}
+                                    >
+                                      {taskOptions.map((t) => (
+                                        <Option key={t} value={t}>
+                                          {t} {sharedTasksMap[t]?.length > 1 ? "(shared)" : ""}
+                                        </Option>
+                                      ))}
+                                    </Combobox>
+                                  </Field>
+                                  <Field label={`Severity (${painForm.severity}/5)`} hint={severityLabel[painForm.severity]}>
+                                    <Slider
+                                      min={1}
+                                      max={5}
+                                      step={1}
+                                      value={painForm.severity}
+                                      onChange={(_, data) => setPainForm({ ...painForm, severity: data.value })}
+                                    />
+                                  </Field>
+                                  <Field label="Frequency">
+                                    <Combobox
+                                      value={painForm.frequency}
+                                      style={{ width: "100%" }}
+                                      onOptionSelect={(_, data) =>
+                                        setPainForm({ ...painForm, frequency: data.optionValue || data.value || "weekly" })
+                                      }
+                                      onChange={(_, data) => setPainForm({ ...painForm, frequency: data.value })}
+                                    >
+                                      {["daily", "weekly", "monthly", "adhoc"].map((f) => (
+                                        <Option key={f} value={f}>
+                                          {f}
+                                        </Option>
+                                      ))}
+                                    </Combobox>
+                                  </Field>
+                                  <Field label="Duration (per occurrence)">
+                                    <div style={{ display: "flex", gap: tokens.spacingHorizontalXS }}>
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        placeholder="e.g., 30"
+                                        value={painForm.durationValue}
+                                        style={{ width: "100%" }}
+                                        onChange={(_, d) => setPainForm({ ...painForm, durationValue: d.value })}
+                                      />
+                                      <Combobox
+                                        value={painForm.durationUnit}
+                                        style={{ width: "120px" }}
+                                        onOptionSelect={(_, data) =>
+                                          setPainForm({ ...painForm, durationUnit: data.optionValue || data.value || "minutes" })
+                                        }
+                                        onChange={(_, data) => setPainForm({ ...painForm, durationUnit: data.value })}
+                                      >
+                                        <Option value="minutes">minutes</Option>
+                                        <Option value="hours">hours</Option>
+                                      </Combobox>
+                                    </div>
+                                  </Field>
+                                  <Field label="Cost / risk">
+                                    <Input
+                                      placeholder="$500/week"
+                                      value={painForm.cost}
+                                      style={{ width: "100%" }}
+                                      onChange={(_, d) => setPainForm({ ...painForm, cost: d.value })}
+                                    />
+                                  </Field>
+                                  <Field label="Friction type (max 2)">
+                                    <Combobox
+                                      multiselect
+                                      value={painForm.frictionTypes}
+                                      style={{ width: "100%" }}
+                                      onOptionSelect={(_, data) => {
+                                        const option = data.optionValue || data.value;
+                                        if (!option) return;
+                                        setPainForm((prev) => {
+                                          const current = new Set(prev.frictionTypes || []);
+                                          if (current.has(option)) {
+                                            current.delete(option);
+                                          } else if (current.size < 2) {
+                                            current.add(option);
+                                          }
+                                          return { ...prev, frictionTypes: Array.from(current) };
+                                        });
+                                      }}
+                                    >
+                                      {[
+                                        "Delay (waiting for info, approvals, input)",
+                                        "Rework (fixing errors, re-doing work)",
+                                        "Manual effort (copy/paste, chasing info)",
+                                        "Decision bottleneck (waiting for judgement)",
+                                        "Handover friction (Cross-team dependencies)",
+                                        "Tool mismatch (wrong or missing system)",
+                                        "Compliance/ control burden (over-checking, audit steps)"
+                                      ].map((f) => (
+                                        <Option key={f} value={f}>
+                                          {f}
+                                        </Option>
+                                      ))}
+                                    </Combobox>
+                                  </Field>
+                                  <Field label="Why is it painful?">
+                                    <Textarea
+                                      placeholder="Describe the impact"
+                                      value={painForm.description}
+                                      style={{ width: "100%" }}
+                                      rows={3}
+                                      onChange={(_, d) => setPainForm({ ...painForm, description: d.value })}
+                                    />
+                                  </Field>
+                                  <div style={{ display: "flex", gap: tokens.spacingHorizontalS, justifyContent: "space-between" }}>
+                                    <Text size={200}>
+                                      Weekly loss:{" "}
+                                      {formatMinutes(
+                                        (Number(painForm.durationValue) || 0) *
+                                          (painForm.durationUnit === "hours" ? 60 : 1) *
+                                          (occurrencesByFrequency[painForm.frequency || "weekly"]?.weekly || 0)
+                                      )}
+                                    </Text>
+                                    <Text size={200}>
+                                      Monthly loss:{" "}
+                                      {formatMinutes(
+                                        (Number(painForm.durationValue) || 0) *
+                                          (painForm.durationUnit === "hours" ? 60 : 1) *
+                                          (occurrencesByFrequency[painForm.frequency || "weekly"]?.monthly || 0)
+                                      )}
+                                    </Text>
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "flex-end", gap: tokens.spacingHorizontalS }}>
+                                    <Button onClick={() => setPainMenuOpen(false)}>Cancel</Button>
+                                    <Button
+                                      appearance="primary"
+                                      icon={<Add16Regular />}
+                                      disabled={!painForm.task.trim()}
+                                      onClick={() => {
+                                        addPainPoint();
+                                        setPainMenuOpen(false);
+                                      }}
+                                    >
+                                      Save
+                                    </Button>
+                                  </div>
+                                </div>
+                              </Card>
+                            </div>
+                          )}
                         </div>
-                        <div style={{ display: "flex", justifyContent: "flex-end", gap: tokens.spacingHorizontalS }}>
-                          <Button onClick={() => setPainMenuOpen(false)}>Cancel</Button>
-                          <Button
-                            appearance="primary"
-                            icon={<Add16Regular />}
-                            disabled={!painForm.task.trim()}
-                            onClick={() => {
-                              addPainPoint();
-                              setPainMenuOpen(false);
-                            }}
-                          >
-                            Save
-                          </Button>
+                        <Diagram
+                          roleName={roleName || "Role"}
+                          collaborators={collaborators}
+                          sharedTasksMap={sharedTasksMap}
+                          sharedToolsMap={sharedToolsMap}
+                          painPoints={painPoints}
+                          soloTasks={soloTasks}
+                          helperAgents={helperNodes}
+                          expanded={diagramExpanded}
+                          nodePositions={nodePositions}
+                          setNodePositions={setNodePositions}
+                          onTaskSelect={openPainForTask}
+                          onHelperSelect={(node) => {
+                            setHelperDialog({
+                              name: node.name,
+                              description: node.description,
+                              friction: node.friction_addressed,
+                              capabilities: {
+                                required: node.capabilities_required,
+                                optional: node.capabilities_optional
+                              },
+                              timeSaved: node.time_saved_hours_per_week,
+                              setup: node.setup_time_minutes,
+                              url: node.url
+                            });
+                          }}
+                          ref={diagramRef}
+                        />
+                        <div className={styles.stack} style={{ marginTop: tokens.spacingVerticalM }}>
+                          <Divider />
+                          <div style={{ display: "grid", gap: tokens.spacingHorizontalM, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+                            <div>
+                              <Subtitle2>Shared Tools</Subtitle2>
+                              {sharedToolsList.length === 0 && <Text className={styles.muted}>No overlaps yet.</Text>}
+                              {sharedToolsList.map(([tool, list]) => (
+                                <Text key={tool}>• {tool}: {list.join(", ")}</Text>
+                              ))}
+                            </div>
+                            <div>
+                              <Subtitle2>Shared Tasks</Subtitle2>
+                              {sharedTasksList.length === 0 && <Text className={styles.muted}>No overlaps yet.</Text>}
+                              {sharedTasksList.map(([task, list]) => (
+                                <Text key={task}>• {task}: {list.join(", ")}</Text>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </Card>
                   </div>
-                )}
-              </div>
-              <Diagram
-                roleName={roleName || "Role"}
-                collaborators={collaborators}
-                sharedTasksMap={sharedTasksMap}
-                sharedToolsMap={sharedToolsMap}
-                painPoints={painPoints}
-                soloTasks={soloTasks}
-                helperAgents={helperNodes}
-                expanded={diagramExpanded}
-                nodePositions={nodePositions}
-                setNodePositions={setNodePositions}
-                onTaskSelect={openPainForTask}
-                onHelperSelect={(node) => {
-                  setHelperDialog({
-                    name: node.name,
-                    description: node.description,
-                    friction: node.friction_addressed,
-                    capabilities: {
-                      required: node.capabilities_required,
-                      optional: node.capabilities_optional
-                    },
-                    timeSaved: node.time_saved_hours_per_week,
-                    setup: node.setup_time_minutes,
-                    url: node.url
-                  });
-                }}
-                ref={diagramRef}
-              />
-              <div className={styles.stack} style={{ marginTop: tokens.spacingVerticalM }}>
-                <Divider />
-                <div style={{ display: "grid", gap: tokens.spacingHorizontalM, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-                  <div>
-                    <Subtitle2>Shared Tools</Subtitle2>
-                    {sharedToolsList.length === 0 && <Text className={styles.muted}>No overlaps yet.</Text>}
-                    {sharedToolsList.map(([tool, list]) => (
-                      <Text key={tool}>• {tool}: {list.join(", ")}</Text>
-                    ))}
-                  </div>
-                  <div>
-                    <Subtitle2>Shared Tasks</Subtitle2>
-                    {sharedTasksList.length === 0 && <Text className={styles.muted}>No overlaps yet.</Text>}
-                    {sharedTasksList.map(([task, list]) => (
-                      <Text key={task}>• {task}: {list.join(", ")}</Text>
-                    ))}
-                  </div>
-                </div>
-              </div>
+                </>
+              )}
             </div>
-          </Card>
-        </div>
-      </>
-      )}
-      </div>
-      </div>
-      <Dialog open={!!openForm} onOpenChange={(_, data) => setOpenForm(data.open ? openForm : null)}>
-        <DialogSurface>
-          <DialogBody>
-            <DialogTitle>
-              {openForm === "role" && "Role definition"}
-              {openForm === "collaborators" && "Add collaborators & shared tasks"}
-              {openForm === "solo" && "Add non-collaborative task"}
-              {openForm === "tools" && "Add tools"}
-              {openForm === "goals" && "Add goals"}
-            </DialogTitle>
-            <DialogContent>{renderModalContent()}</DialogContent>
-            <DialogActions>
-              <Button appearance="secondary" onClick={() => setOpenForm(null)}>
-                Close
-              </Button>
-            </DialogActions>
-          </DialogBody>
-        </DialogSurface>
-      </Dialog>
-      <Dialog open={!!helperDialog} onOpenChange={(_, data) => setHelperDialog(data.open ? helperDialog : null)}>
-        <DialogSurface>
-          <DialogBody>
-            <DialogTitle>{helperDialog?.name || "Helper agent"}</DialogTitle>
-            <DialogContent>
-              <div className={styles.stack}>
-                <Text>{helperDialog?.description || "No description provided."}</Text>
-                {helperDialog?.friction?.length ? (
-                  <div style={{ display: "flex", gap: tokens.spacingHorizontalS, flexWrap: "wrap" }}>
-                    {helperDialog.friction.map((f) => (
-                      <Tag key={f} shape="rounded" appearance="outline">
-                        {formatFriction(f)}
-                      </Tag>
-                    ))}
+          </div>
+
+          <Dialog open={!!openForm} onOpenChange={(_, data) => setOpenForm(data.open ? openForm : null)}>
+            <DialogSurface>
+              <DialogBody>
+                <DialogTitle>
+                  {openForm === "role" && "Role definition"}
+                  {openForm === "collaborators" && "Add collaborators & shared tasks"}
+                  {openForm === "solo" && "Add non-collaborative task"}
+                  {openForm === "tools" && "Add tools"}
+                  {openForm === "goals" && "Add goals"}
+                </DialogTitle>
+                <DialogContent>{renderModalContent()}</DialogContent>
+                <DialogActions>
+                  <Button appearance="secondary" onClick={() => setOpenForm(null)}>
+                    Close
+                  </Button>
+                </DialogActions>
+              </DialogBody>
+            </DialogSurface>
+          </Dialog>
+          <Dialog open={!!helperDialog} onOpenChange={(_, data) => setHelperDialog(data.open ? helperDialog : null)}>
+            <DialogSurface>
+              <DialogBody>
+                <DialogTitle>{helperDialog?.name || "Helper agent"}</DialogTitle>
+                <DialogContent>
+                  <div className={styles.stack}>
+                    <Text>{helperDialog?.description || "No description provided."}</Text>
+                    {helperDialog?.friction?.length ? (
+                      <div style={{ display: "flex", gap: tokens.spacingHorizontalS, flexWrap: "wrap" }}>
+                        {helperDialog.friction.map((f) => (
+                          <Tag key={f} shape="rounded" appearance="outline">
+                            {formatFriction(f)}
+                          </Tag>
+                        ))}
+                      </div>
+                    ) : null}
+                    <Text size={200} className={styles.muted}>
+                      Required: {(helperDialog?.capabilities?.required || []).join(", ") || "None"} • Optional:{" "}
+                      {(helperDialog?.capabilities?.optional || []).join(", ") || "None"}
+                    </Text>
+                    <Text size={200} className={styles.muted}>
+                      Time saved: {helperDialog?.timeSaved ? `${helperDialog.timeSaved}h/week` : "—"} • Setup:{" "}
+                      {helperDialog?.setup ? `${helperDialog.setup} mins` : "—"}
+                    </Text>
                   </div>
-                ) : null}
-                <Text size={200} className={styles.muted}>
-                  Required: {(helperDialog?.capabilities?.required || []).join(", ") || "None"} • Optional:{" "}
-                  {(helperDialog?.capabilities?.optional || []).join(", ") || "None"}
-                </Text>
-                <Text size={200} className={styles.muted}>
-                  Time saved: {helperDialog?.timeSaved ? `${helperDialog.timeSaved}h/week` : "—"} • Setup:{" "}
-                  {helperDialog?.setup ? `${helperDialog.setup} mins` : "—"}
-                </Text>
-              </div>
-            </DialogContent>
-            <DialogActions>
-              <Button appearance="secondary" onClick={() => setHelperDialog(null)}>
-                Close
-              </Button>
-              <Button
-                as={helperDialog?.url ? "a" : "button"}
-                href={helperDialog?.url || undefined}
-                target={helperDialog?.url ? "_blank" : undefined}
-                rel={helperDialog?.url ? "noreferrer" : undefined}
-                appearance="primary"
-                disabled={!helperDialog?.url}
-              >
-                View agent definition
-              </Button>
-            </DialogActions>
-          </DialogBody>
-        </DialogSurface>
-      </Dialog>
-      <Dialog open={confirmReset} onOpenChange={(_, data) => setConfirmReset(data.open)}>
-        <DialogSurface>
-          <DialogBody>
-            <DialogTitle>Start a new role?</DialogTitle>
-            <DialogContent>
-              <Text>Current role data will be cleared. If you haven’t saved, it will be lost.</Text>
-            </DialogContent>
-            <DialogActions>
-              <Button appearance="secondary" onClick={() => setConfirmReset(false)}>Cancel</Button>
-              <Button appearance="primary" onClick={() => { setConfirmReset(false); resetRole(); }}>Confirm</Button>
-            </DialogActions>
-          </DialogBody>
-        </DialogSurface>
-      </Dialog>
+                </DialogContent>
+                <DialogActions>
+                  <Button appearance="secondary" onClick={() => setHelperDialog(null)}>
+                    Close
+                  </Button>
+                  <Button
+                    as={helperDialog?.url ? "a" : "button"}
+                    href={helperDialog?.url || undefined}
+                    target={helperDialog?.url ? "_blank" : undefined}
+                    rel={helperDialog?.url ? "noreferrer" : undefined}
+                    appearance="primary"
+                    disabled={!helperDialog?.url}
+                  >
+                    View agent definition
+                  </Button>
+                </DialogActions>
+              </DialogBody>
+            </DialogSurface>
+          </Dialog>
+          <Dialog open={confirmReset} onOpenChange={(_, data) => setConfirmReset(data.open)}>
+            <DialogSurface>
+              <DialogBody>
+                <DialogTitle>Start a new role?</DialogTitle>
+                <DialogContent>
+                  <Text>Current role data will be cleared. If you haven’t saved, it will be lost.</Text>
+                </DialogContent>
+                <DialogActions>
+                  <Button appearance="secondary" onClick={() => setConfirmReset(false)}>Cancel</Button>
+                  <Button appearance="primary" onClick={() => { setConfirmReset(false); resetRole(); }}>Confirm</Button>
+                </DialogActions>
+              </DialogBody>
+            </DialogSurface>
+          </Dialog>
+        </>
+      )}
     </FluentProvider>
   );
 };
