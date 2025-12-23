@@ -187,10 +187,10 @@ const useStyles = makeStyles({
   },
   painDot: {
     position: "absolute",
-    bottom: 6,
+    top: 6,
     right: 6,
-    width: "10px",
-    height: "10px",
+    width: "14px",
+    height: "14px",
     borderRadius: "50%",
     boxShadow: tokens.shadow4,
     border: `1px solid ${tokens.colorNeutralBackground1}`
@@ -383,6 +383,7 @@ const ProcessOptimization = ({ onBack, onSaveProcess }) => {
   const [processInfo, setProcessInfo] = useState({ name: "", description: "", businessUnit: "" });
   const [painForm, setPainForm] = useState({ title: "", stepId: "", severity: 3, description: "" });
   const [painPoints, setPainPoints] = useState([]);
+  const [editingPainId, setEditingPainId] = useState(null);
   const baseWidth = 1400;
   const baseHeight = 900;
   const typeCounts = useMemo(() => {
@@ -546,17 +547,28 @@ const ProcessOptimization = ({ onBack, onSaveProcess }) => {
   const addPainPoint = () => {
     const title = painForm.title.trim();
     if (!title) return;
-    setPainPoints((prev) => [
-      ...prev,
-      {
-        id: `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
-        title,
-        stepId: painForm.stepId,
-        severity: painForm.severity,
-        description: painForm.description.trim()
-      }
-    ]);
+    if (editingPainId) {
+      setPainPoints((prev) =>
+        prev.map((p) =>
+          p.id === editingPainId
+            ? { ...p, title, stepId: painForm.stepId, severity: painForm.severity, description: painForm.description.trim() }
+            : p
+        )
+      );
+    } else {
+      setPainPoints((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+          title,
+          stepId: painForm.stepId,
+          severity: painForm.severity,
+          description: painForm.description.trim()
+        }
+      ]);
+    }
     setPainForm({ title: "", stepId: "", severity: 3, description: "" });
+    setEditingPainId(null);
   };
 
   const closeContextMenu = () => setContextMenu(null);
@@ -705,8 +717,19 @@ const ProcessOptimization = ({ onBack, onSaveProcess }) => {
                               : p.severity >= 3
                               ? tokens.colorPaletteYellowBackground2
                               : tokens.colorPaletteGreenBackground1,
-                          bottom: 6,
-                          right: 6 + idx * 12
+                          top: 6,
+                          right: 6 + idx * 16
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingPainId(p.id);
+                          setPainForm({
+                            title: p.title,
+                            stepId: p.stepId || "",
+                            severity: p.severity,
+                            description: p.description || ""
+                          });
+                          setPainOpen(true);
                         }}
                       />
                     ))}
@@ -840,9 +863,15 @@ const ProcessOptimization = ({ onBack, onSaveProcess }) => {
                 </Field>
                 <div style={{ display: "flex", gap: tokens.spacingHorizontalS }}>
                   <Button appearance="primary" onClick={addPainPoint} disabled={!painForm.title.trim()}>
-                    Add pain point
+                    {editingPainId ? "Update pain point" : "Add pain point"}
                   </Button>
-                  <Button appearance="secondary" onClick={() => setPainForm({ title: "", stepId: "", severity: 3, description: "" })}>
+                  <Button
+                    appearance="secondary"
+                    onClick={() => {
+                      setPainForm({ title: "", stepId: "", severity: 3, description: "" });
+                      setEditingPainId(null);
+                    }}
+                  >
                     Reset
                   </Button>
                 </div>
@@ -856,6 +885,16 @@ const ProcessOptimization = ({ onBack, onSaveProcess }) => {
                       color={severityColor(p.severity)}
                       dismissible
                       onDismiss={() => setPainPoints((prev) => prev.filter((pp) => pp.id !== p.id))}
+                      onClick={() => {
+                        setEditingPainId(p.id);
+                        setPainForm({
+                          title: p.title,
+                          stepId: p.stepId || "",
+                          severity: p.severity,
+                          description: p.description || ""
+                        });
+                        setPainOpen(true);
+                      }}
                     >
                       {p.title}
                       {p.stepId ? ` • ${steps.find((s) => s.id === p.stepId)?.name || "Step"}` : ""}
