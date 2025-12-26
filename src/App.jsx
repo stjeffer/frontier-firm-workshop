@@ -2,6 +2,7 @@ import React, { useMemo, useState, useRef, useEffect } from "react";
 import {
   FluentProvider,
   webLightTheme,
+  teamsLightTheme,
   Card,
   CardHeader,
   Button,
@@ -50,7 +51,7 @@ import { CATALOG_URL } from "./config/catalog";
 import ProcessOptimization from "./ProcessOptimization";
 
 const appTheme = {
-  ...webLightTheme,
+  ...teamsLightTheme,
   colorBrandBackground: "#2563EB",
   colorBrandBackgroundHover: "#1D4ED8",
   colorBrandBackgroundPressed: "#1E40AF",
@@ -313,9 +314,12 @@ const useStyles = makeStyles({
     backgroundColor: "#eef2ff",
     backgroundImage: "linear-gradient(135deg, rgba(37,99,235,0.2) 0%, rgba(124,58,237,0.18) 45%, rgba(236,72,153,0.14) 100%)",
     minHeight: "100vh",
+    height: "100vh",
+    boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
-    gap: tokens.spacingVerticalL
+    gap: tokens.spacingVerticalL,
+    overflow: "hidden"
   },
   facilitatorGrid: {
     display: "grid",
@@ -324,10 +328,12 @@ const useStyles = makeStyles({
   },
   startShell: {
     minHeight: "100vh",
+    height: "100vh",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     padding: tokens.spacingHorizontalXL,
+    boxSizing: "border-box",
     backgroundColor: "#eef2ff",
     backgroundImage: "linear-gradient(135deg, rgba(37,99,235,0.28) 0%, rgba(124,58,237,0.24) 45%, rgba(236,72,153,0.2) 100%)"
   },
@@ -345,6 +351,15 @@ const useStyles = makeStyles({
     display: "flex",
     flexDirection: "column",
     gap: tokens.spacingVerticalS
+  },
+  startCard: {
+    borderRadius: tokens.borderRadiusLarge,
+    boxShadow: tokens.shadow16,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    transition: "box-shadow 120ms ease",
+    ":hover": {
+      boxShadow: tokens.shadow16
+    }
   }
 });
 
@@ -1822,7 +1837,7 @@ const App = () => {
               </Text>
             </div>
             <div className={styles.startGrid}>
-              <Card className={styles.panelCard}>
+              <Card className={styles.startCard}>
                 <CardHeader
                   header={<Subtitle2>Role augmentation</Subtitle2>}
                   description={<Text className={styles.muted}>Map collaborators, tasks, tools, and pain points.</Text>}
@@ -1834,7 +1849,7 @@ const App = () => {
                   </Button>
                 </div>
               </Card>
-              <Card className={styles.panelCard}>
+              <Card className={styles.startCard}>
                 <CardHeader
                   header={<Subtitle2>Process optimization</Subtitle2>}
                   description={<Text className={styles.muted}>Lay out swimlanes, triggers, decisions, and more.</Text>}
@@ -1846,7 +1861,7 @@ const App = () => {
                   </Button>
                 </div>
               </Card>
-              <Card className={styles.panelCard}>
+              <Card className={styles.startCard}>
                 <CardHeader
                   header={<Subtitle2>Facilitator view</Subtitle2>}
                   description={<Text className={styles.muted}>Review saved roles and processes together.</Text>}
