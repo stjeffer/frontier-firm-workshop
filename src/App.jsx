@@ -308,6 +308,20 @@ const useStyles = makeStyles({
     margin: `${tokens.spacingVerticalXS} 0`,
     color: tokens.colorNeutralForeground2
   },
+  facilitatorShell: {
+    padding: tokens.spacingHorizontalXL,
+    backgroundColor: "#eef2ff",
+    backgroundImage: "linear-gradient(135deg, rgba(37,99,235,0.2) 0%, rgba(124,58,237,0.18) 45%, rgba(236,72,153,0.14) 100%)",
+    minHeight: "100vh",
+    display: "flex",
+    flexDirection: "column",
+    gap: tokens.spacingVerticalL
+  },
+  facilitatorGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: tokens.spacingHorizontalL
+  },
   startShell: {
     minHeight: "100vh",
     display: "flex",
@@ -1873,245 +1887,256 @@ const App = () => {
       )}
 
       {experience === "role" && (
-        <>
-          <div className={`${styles.shell} ${styles.layout}`}>
-            <div className={styles.navRail}>
-              <Text weight="semibold">Workspace</Text>
-              <Button appearance="secondary" size="small" onClick={() => setExperience("start")}>
-                Back to start
-              </Button>
-              <MenuList aria-label="Workspace navigation">
-                <div className={styles.navLabel}>Role setup</div>
-                <MenuItem
-                  icon={<DocumentText16Regular />}
-                  onClick={() => setOpenForm("role")}
-                  secondaryContent={
-                    roleComplete ? (
-                      <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
-                        <CheckmarkCircle16Regular />
-                      </span>
-                    ) : null
-                  }
-                >
-                  Role definition
-                </MenuItem>
-                <MenuItem
-                  icon={<Toolbox16Regular />}
-                  onClick={() => setOpenForm("tools")}
-                  secondaryContent={
-                    toolsComplete ? (
-                      <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
-                        <CheckmarkCircle16Regular />
-                      </span>
-                    ) : null
-                  }
-                >
-                  Tools
-                </MenuItem>
-                <MenuItem
-                  icon={<TaskListSquareLtr16Regular />}
-                  onClick={() => setOpenForm("solo")}
-                  secondaryContent={
-                    soloComplete ? (
-                      <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
-                        <CheckmarkCircle16Regular />
-                      </span>
-                    ) : null
-                  }
-                >
-                  Non-collab tasks
-                </MenuItem>
-                <MenuItem
-                  icon={<PeopleCommunity16Regular />}
-                  onClick={() => setOpenForm("collaborators")}
-                  secondaryContent={
-                    collabComplete ? (
-                      <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
-                        <CheckmarkCircle16Regular />
-                      </span>
-                    ) : null
-                  }
-                >
-                  Collaborators & tasks
-                </MenuItem>
-                <MenuItem
-                  icon={<Target16Regular />}
-                  onClick={() => setOpenForm("goals")}
-                  secondaryContent={
-                    goalsComplete ? (
-                      <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
-                        <CheckmarkCircle16Regular />
-                      </span>
-                    ) : null
-                  }
-                >
-                  Goals
-                </MenuItem>
-                <MenuDivider />
-                <MenuItem
-                  icon={<Save16Regular />}
-                  onClick={saveRoleSnapshot}
-                  disabled={!roleName.trim() || !headcount.trim() || !businessUnit.trim() || !description.trim() || goals.length === 0}
-                >
-                  Save role
-                </MenuItem>
-                <MenuItem icon={<Add16Regular />} onClick={() => setConfirmReset(true)}>
-                  New role
-                </MenuItem>
-                <MenuDivider />
-                <MenuItem onClick={() => setIsFacilitator((v) => !v)}>
-                  {isFacilitator ? "Exit facilitator" : "Facilitator view"}
-                </MenuItem>
-              </MenuList>
-              {savedRoles.length > 0 && (
-                <div className={styles.navGroup}>
-                  <div className={styles.navLabel}>Saved roles</div>
-              {savedRoles.map((r) => (
-                <Button
-                  key={r.id}
-                  appearance="secondary"
-                  size="small"
-                  onClick={() => loadRoleSnapshot(r)}
-                >
-                  {r.name}
-                </Button>
-              ))}
-            </div>
-          )}
-          {savedProcesses.length > 0 && (
-            <div className={styles.navGroup}>
-              <div className={styles.navLabel}>Saved processes</div>
-              {savedProcesses.map((p) => (
-                <Button key={p.id} appearance="secondary" size="small" onClick={() => setExperience("process")}>
-                  {p.processInfo?.name || "Process"}
-                </Button>
-              ))}
-            </div>
-          )}
-        </div>
-        <div>
-          {isFacilitator ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(420px, 1fr))", gap: tokens.spacingHorizontalL }}>
-              {(savedRoles.length === 0 ? [] : savedRoles).map((r, idx) => {
-                    const summary = summarizePain(r.painPoints || []);
-                    const sharedMap = (() => {
-                      const map = {};
-                      (r.collaborators || []).forEach((c) => (c.tasks || []).forEach((t) => {
-                        map[t] = map[t] || [];
-                        map[t].push(c.name);
-                      }));
-                      return map;
-                    })();
-                    const collabPain = (r.painPoints || []).filter((p) => (sharedMap[p.task || p.title] || []).length > 0);
-                    const soloPain = (r.painPoints || []).filter((p) => (sharedMap[p.task || p.title] || []).length === 0);
-                    return (
-                      <Card key={`${r.id}-${idx}`} style={{ height: "100%" }} className={styles.panelCard}>
-                        <CardHeader
-                          header={<Title3>{r.roleName || r.name || "Role not set"}</Title3>}
-                          description={
-                            <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXXS }}>
-                              <Text size={200} className={styles.muted}>Everything for this role in one place.</Text>
-                              <Text size={200}>Business unit: {r.businessUnit || "—"}</Text>
-                              <Text size={200}>Headcount: {r.headcount || "—"}</Text>
-                              <Text size={200} className={styles.muted} style={{ maxWidth: "480px" }}>
-                                {r.description || "No description yet."}
-                              </Text>
-                            </div>
-                          }
-                          action={
-                            <div style={{ display: "flex", gap: tokens.spacingHorizontalXS }}>
-                              <Button appearance="subtle" onClick={() => loadRoleSnapshot(r)}>
-                                Open
-                              </Button>
-                              <Button
-                                appearance="subtle"
-                                icon={<Delete16Regular />}
-                                aria-label="Delete saved role"
-                                onClick={() => deleteSavedRole(r.id)}
-                              />
-                            </div>
-                          }
-                        />
-                        <div className={styles.stack}>
-                          <div style={{ display: "flex", justifyContent: "space-between", gap: tokens.spacingHorizontalM, alignItems: "flex-start", paddingRight: tokens.spacingHorizontalS }}>
-                            <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXS }}>
-                              <Text size={200} weight="semibold">Pain impact</Text>
+        isFacilitator ? (
+            <div className={styles.facilitatorShell}>
+              <div className={styles.topBar}>
+                <div style={{ display: "flex", alignItems: "center", gap: tokens.spacingHorizontalS }}>
+                  <Text weight="semibold">Facilitator dashboard</Text>
+                  <Text size={200} className={styles.muted}>
+                    Roles on the left, processes on the right.
+                  </Text>
+                </div>
+                <div style={{ display: "flex", gap: tokens.spacingHorizontalS }}>
+                  <Button appearance="secondary" onClick={() => setExperience("start")}>
+                    Back to start
+                  </Button>
+                  <Button appearance="secondary" onClick={() => setIsFacilitator(false)}>
+                    Exit facilitator
+                  </Button>
+                </div>
+              </div>
+              <div className={styles.facilitatorGrid}>
+                <div>
+                  <Card className={styles.panelCard}>
+                    <CardHeader
+                      header={<Subtitle2>Role analysis</Subtitle2>}
+                      description={<Text className={styles.muted}>Saved roles and their pain summaries.</Text>}
+                    />
+                    <div className={styles.stack}>
+                      {savedRoles.length === 0 && <Text className={styles.muted}>No roles saved yet.</Text>}
+                      {savedRoles.map((r, idx) => {
+                        const summary = summarizePain(r.painPoints || []);
+                        const sharedMap = (() => {
+                          const map = {};
+                          (r.collaborators || []).forEach((c) => (c.tasks || []).forEach((t) => {
+                            map[t] = map[t] || [];
+                            map[t].push(c.name);
+                          }));
+                          return map;
+                        })();
+                        const collabPain = (r.painPoints || []).filter((p) => (sharedMap[p.task || p.title] || []).length > 0);
+                        const soloPain = (r.painPoints || []).filter((p) => (sharedMap[p.task || p.title] || []).length === 0);
+                        return (
+                          <Card key={`${r.id}-${idx}`} className={styles.collaboratorBlock}>
+                            <CardHeader
+                              header={<Title3>{r.roleName || r.name || "Role not set"}</Title3>}
+                              description={
+                                <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXXS }}>
+                                  <Text size={200} className={styles.muted}>Business unit: {r.businessUnit || "—"}</Text>
+                                  <Text size={200}>Headcount: {r.headcount || "—"}</Text>
+                                  <Text size={200} className={styles.muted} style={{ maxWidth: "480px" }}>
+                                    {r.description || "No description yet."}
+                                  </Text>
+                                </div>
+                              }
+                              action={
+                                <div style={{ display: "flex", gap: tokens.spacingHorizontalXS }}>
+                                  <Button appearance="subtle" onClick={() => loadRoleSnapshot(r)}>
+                                    Open
+                                  </Button>
+                                  <Button
+                                    appearance="subtle"
+                                    icon={<Delete16Regular />}
+                                    aria-label="Delete saved role"
+                                    onClick={() => deleteSavedRole(r.id)}
+                                  />
+                                </div>
+                              }
+                            />
+                            <div className={styles.stack}>
                               <div style={{ display: "flex", alignItems: "center", gap: tokens.spacingHorizontalM }}>
                                 {renderLossDonut(summary.weekly)}
                                 <div style={{ display: "flex", flexDirection: "column", gap: tokens.spacingVerticalXXS }}>
                                   <Text size={200}>Weekly loss: {formatMinutes(summary.weekly)}</Text>
                                   <Text size={200}>Monthly loss: {formatMinutes(summary.monthly)}</Text>
-                                  <Text size={200} color="neutral">Share of a 40h week spent in friction/pain.</Text>
                                 </div>
                               </div>
+                              <Divider />
+                              <Text weight="semibold">Isolated pain points</Text>
+                              <div style={{ display: "flex", gap: tokens.spacingHorizontalS, flexWrap: "wrap" }}>
+                                {(soloPain || []).length === 0 && <Text className={styles.muted}>None captured.</Text>}
+                                {soloPain.map((p, i2) => (
+                                  <React.Fragment key={`iso-${idx}-${i2}`}>{renderPainBadge(p)}</React.Fragment>
+                                ))}
+                              </div>
+                              <Text weight="semibold">Collaborative pain points</Text>
+                              <div style={{ display: "flex", gap: tokens.spacingHorizontalS, flexWrap: "wrap" }}>
+                                {(collabPain || []).length === 0 && <Text className={styles.muted}>None captured.</Text>}
+                                {collabPain.map((p, i3) => {
+                                  const collabs = sharedMap[p.task || p.title] || [];
+                                  return <React.Fragment key={`collab-${idx}-${i3}`}>{renderPainBadge(p, collabs)}</React.Fragment>;
+                                })}
+                              </div>
                             </div>
-                          </div>
-                          <Divider />
-                          <div className={styles.stack}>
-                            <Text weight="semibold">Isolated pain points</Text>
-                            <div style={{ display: "flex", gap: tokens.spacingHorizontalS, flexWrap: "wrap" }}>
-                              {(soloPain || []).length === 0 && <Text className={styles.muted}>None captured.</Text>}
-                              {soloPain.map((p, i2) => (
-                                <React.Fragment key={`iso-${idx}-${i2}`}>{renderPainBadge(p)}</React.Fragment>
-                              ))}
-                            </div>
-                            <Text weight="semibold" style={{ marginTop: tokens.spacingVerticalS }}>
-                              Collaborative pain points
-                            </Text>
-                            <div style={{ display: "flex", gap: tokens.spacingHorizontalS, flexWrap: "wrap" }}>
-                              {(collabPain || []).length === 0 && <Text className={styles.muted}>None captured.</Text>}
-                              {collabPain.map((p, i3) => {
-                                const collabs = sharedMap[p.task || p.title] || [];
-                                return <React.Fragment key={`collab-${idx}-${i3}`}>{renderPainBadge(p, collabs)}</React.Fragment>;
-                              })}
-                            </div>
-                          </div>
-                        </div>
-                </Card>
-              );
-            })}
-            {savedRoles.length === 0 && (
-              <Card>
-                      <CardHeader
-                        header={<Subtitle2>No roles saved yet</Subtitle2>}
-                        description={<Text className={styles.muted}>Save a role to see it here.</Text>}
-                      />
-              </Card>
-            )}
-            <Card className={styles.panelCard} style={{ gridColumn: "span 2" }}>
-              <CardHeader
-                header={<Subtitle2>Saved processes</Subtitle2>}
-                description={<Text className={styles.muted}>Processes captured in the optimization canvas.</Text>}
-              />
-              <div className={styles.stack}>
-                {savedProcesses.length === 0 && <Text className={styles.muted}>No processes saved yet.</Text>}
-                {savedProcesses.map((p) => (
-                  <Card key={p.id} className={styles.collaboratorBlock}>
-                    <div className={styles.collaboratorHeader}>
-                      <Text weight="semibold">{p.processInfo?.name || "Process"}</Text>
-                      <Text size={200} className={styles.muted}>
-                        {p.processInfo?.businessUnit || "Unit not set"}
-                      </Text>
-                    </div>
-                    <Text size={200} className={styles.muted}>
-                      {p.processInfo?.description || "No description."}
-                    </Text>
-                    <Text size={200}>Steps: {p.steps?.length || 0} • Connections: {p.connections?.length || 0}</Text>
-                    <div style={{ display: "flex", gap: tokens.spacingHorizontalXS, flexWrap: "wrap" }}>
-                      {(p.steps || []).slice(0, 6).map((s) => (
-                        <Tag key={s.id} shape="rounded" appearance="outline">
-                          {s.name}
-                        </Tag>
-                      ))}
-                      {(p.steps || []).length > 6 && <Tag shape="rounded">+{(p.steps || []).length - 6} more</Tag>}
+                          </Card>
+                        );
+                      })}
                     </div>
                   </Card>
-                ))}
+                </div>
+                <div>
+                  <Card className={styles.panelCard}>
+                    <CardHeader
+                      header={<Subtitle2>Process analysis</Subtitle2>}
+                      description={<Text className={styles.muted}>Saved process maps and counts.</Text>}
+                    />
+                    <div className={styles.stack}>
+                      {savedProcesses.length === 0 && <Text className={styles.muted}>No processes saved yet.</Text>}
+                      {savedProcesses.map((p) => (
+                        <Card key={p.id} className={styles.collaboratorBlock}>
+                          <div className={styles.collaboratorHeader}>
+                            <Text weight="semibold">{p.processInfo?.name || "Process"}</Text>
+                            <Text size={200} className={styles.muted}>
+                              {p.processInfo?.businessUnit || "Unit not set"}
+                            </Text>
+                          </div>
+                          <Text size={200} className={styles.muted}>
+                            {p.processInfo?.description || "No description."}
+                          </Text>
+                          <Text size={200}>Steps: {p.steps?.length || 0} • Connections: {p.connections?.length || 0}</Text>
+                          <div style={{ display: "flex", gap: tokens.spacingHorizontalXS, flexWrap: "wrap" }}>
+                            {(p.steps || []).slice(0, 6).map((s) => (
+                              <Tag key={s.id} shape="rounded" appearance="outline">
+                                {s.name}
+                              </Tag>
+                            ))}
+                            {(p.steps || []).length > 6 && <Tag shape="rounded">+{(p.steps || []).length - 6} more</Tag>}
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </Card>
+                </div>
               </div>
-            </Card>
-          </div>
-        ) : (
-          <>
+            </div>
+          ) : (
+            <>
+              <div className={`${styles.shell} ${styles.layout}`}>
+                <div className={styles.navRail}>
+                  <Text weight="semibold">Workspace</Text>
+                  <Button appearance="secondary" size="small" onClick={() => setExperience("start")}>
+                    Back to start
+                  </Button>
+                  <MenuList aria-label="Workspace navigation">
+                    <div className={styles.navLabel}>Role setup</div>
+                    <MenuItem
+                      icon={<DocumentText16Regular />}
+                      onClick={() => setOpenForm("role")}
+                      secondaryContent={
+                        roleComplete ? (
+                          <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
+                            <CheckmarkCircle16Regular />
+                          </span>
+                        ) : null
+                      }
+                    >
+                      Role definition
+                    </MenuItem>
+                    <MenuItem
+                      icon={<Toolbox16Regular />}
+                      onClick={() => setOpenForm("tools")}
+                      secondaryContent={
+                        toolsComplete ? (
+                          <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
+                            <CheckmarkCircle16Regular />
+                          </span>
+                        ) : null
+                      }
+                    >
+                      Tools
+                    </MenuItem>
+                    <MenuItem
+                      icon={<TaskListSquareLtr16Regular />}
+                      onClick={() => setOpenForm("solo")}
+                      secondaryContent={
+                        soloComplete ? (
+                          <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
+                            <CheckmarkCircle16Regular />
+                          </span>
+                        ) : null
+                      }
+                    >
+                      Non-collab tasks
+                    </MenuItem>
+                    <MenuItem
+                      icon={<PeopleCommunity16Regular />}
+                      onClick={() => setOpenForm("collaborators")}
+                      secondaryContent={
+                        collabComplete ? (
+                          <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
+                            <CheckmarkCircle16Regular />
+                          </span>
+                        ) : null
+                      }
+                    >
+                      Collaborators & tasks
+                    </MenuItem>
+                    <MenuItem
+                      icon={<Target16Regular />}
+                      onClick={() => setOpenForm("goals")}
+                      secondaryContent={
+                        goalsComplete ? (
+                          <span style={{ color: tokens.colorStatusSuccessForeground1 }}>
+                            <CheckmarkCircle16Regular />
+                          </span>
+                        ) : null
+                      }
+                    >
+                      Goals
+                    </MenuItem>
+                    <MenuDivider />
+                    <MenuItem
+                      icon={<Save16Regular />}
+                      onClick={saveRoleSnapshot}
+                      disabled={!roleName.trim() || !headcount.trim() || !businessUnit.trim() || !description.trim() || goals.length === 0}
+                    >
+                      Save role
+                    </MenuItem>
+                    <MenuItem icon={<Add16Regular />} onClick={() => setConfirmReset(true)}>
+                      New role
+                    </MenuItem>
+                    <MenuDivider />
+                    <MenuItem onClick={() => setIsFacilitator((v) => !v)}>
+                      {isFacilitator ? "Exit facilitator" : "Facilitator view"}
+                    </MenuItem>
+                  </MenuList>
+                  {savedRoles.length > 0 && (
+                    <div className={styles.navGroup}>
+                      <div className={styles.navLabel}>Saved roles</div>
+                      {savedRoles.map((r) => (
+                        <Button
+                          key={r.id}
+                          appearance="secondary"
+                          size="small"
+                          onClick={() => loadRoleSnapshot(r)}
+                        >
+                          {r.name}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                  {savedProcesses.length > 0 && (
+                    <div className={styles.navGroup}>
+                      <div className={styles.navLabel}>Saved processes</div>
+                      {savedProcesses.map((p) => (
+                        <Button key={p.id} appearance="secondary" size="small" onClick={() => setExperience("process")}>
+                          {p.processInfo?.name || "Process"}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div>
                   <div className={styles.rowTwo}>
                     <Card className={styles.panelCard}>
                       <CardHeader
@@ -2493,10 +2518,8 @@ const App = () => {
                       </div>
                     </Card>
                   </div>
-                </>
-              )}
+              </div>
             </div>
-          </div>
 
           <Dialog open={!!openForm} onOpenChange={(_, data) => setOpenForm(data.open ? openForm : null)}>
             <DialogSurface>
@@ -2576,7 +2599,8 @@ const App = () => {
             </DialogSurface>
           </Dialog>
         </>
-      )}
+      )
+    )}
     </FluentProvider>
   );
 };
