@@ -39,8 +39,7 @@ const useStyles = makeStyles({
     gap: tokens.spacingVerticalL,
     padding: tokens.spacingHorizontalXL,
     minHeight: "100vh",
-    backgroundColor: "#eef2ff",
-    backgroundImage: "linear-gradient(135deg, rgba(37,99,235,0.18) 0%, rgba(124,58,237,0.16) 45%, rgba(236,72,153,0.14) 100%)"
+    backgroundColor: tokens.colorNeutralBackground2
   },
   topBar: {
     display: "flex",

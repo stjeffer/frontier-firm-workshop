@@ -288,8 +288,7 @@ const useStyles = makeStyles({
     minHeight: "100vh",
     height: "100vh",
     overflow: "hidden",
-    backgroundColor: "#eef2ff",
-    backgroundImage: "linear-gradient(135deg, rgba(37,99,235,0.28) 0%, rgba(124,58,237,0.24) 45%, rgba(236,72,153,0.2) 100%)"
+    backgroundColor: tokens.colorNeutralBackground2
   },
   navRail: {
     position: "sticky",
@@ -313,8 +312,7 @@ const useStyles = makeStyles({
   },
   facilitatorShell: {
     padding: tokens.spacingHorizontalXL,
-    backgroundColor: "#eef2ff",
-    backgroundImage: "linear-gradient(135deg, rgba(37,99,235,0.2) 0%, rgba(124,58,237,0.18) 45%, rgba(236,72,153,0.14) 100%)",
+    backgroundColor: tokens.colorNeutralBackground2,
     minHeight: "100vh",
     height: "100vh",
     boxSizing: "border-box",
