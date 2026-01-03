@@ -385,9 +385,14 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalM,
     alignItems: "flex-start"
   },
+  startCardText: {
+    display: "grid",
+    gap: tokens.spacingVerticalXXS
+  },
   startIcon: {
-    width: "48px",
-    height: "48px",
+    width: "52px",
+    height: "52px",
+    padding: "10px",
     borderRadius: "50%",
     display: "inline-flex",
     alignItems: "center",
@@ -1899,9 +1904,9 @@ const App = () => {
               <Card className={`${styles.startCard} ${styles.startCardRole}`}>
                 <div className={styles.startCardHeaderRow}>
                   <span className={`${styles.startIcon} ${styles.startIconRole}`}>
-                    <PeopleCommunity16Regular />
+                    <PeopleCommunity16Regular style={{ width: 32, height: 32 }} />
                   </span>
-                  <div>
+                  <div className={styles.startCardText}>
                     <Subtitle2>Role augmentation</Subtitle2>
                     <Text size={200} className={styles.muted}>
                       Map collaborators, tasks, tools, and pain points.
@@ -1918,9 +1923,9 @@ const App = () => {
               <Card className={`${styles.startCard} ${styles.startCardProcess}`}>
                 <div className={styles.startCardHeaderRow}>
                   <span className={`${styles.startIcon} ${styles.startIconProcess}`}>
-                    <Toolbox16Regular />
+                    <Toolbox16Regular style={{ width: 32, height: 32 }} />
                   </span>
-                  <div>
+                  <div className={styles.startCardText}>
                     <Subtitle2>Process optimization</Subtitle2>
                     <Text size={200} className={styles.muted}>
                       Lay out swimlanes, triggers, decisions, and automations.
@@ -1937,9 +1942,9 @@ const App = () => {
               <Card className={`${styles.startCard} ${styles.startCardFacilitator}`}>
                 <div className={styles.startCardHeaderRow}>
                   <span className={`${styles.startIcon} ${styles.startIconFacilitator}`}>
-                    <Target16Regular />
+                    <Target16Regular style={{ width: 32, height: 32 }} />
                   </span>
-                  <div>
+                  <div className={styles.startCardText}>
                     <Subtitle2>Facilitator view</Subtitle2>
                     <Text size={200} className={styles.muted}>
                       Review saved roles, pain points, and processes together.
