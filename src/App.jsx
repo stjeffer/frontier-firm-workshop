@@ -286,6 +286,8 @@ const useStyles = makeStyles({
     alignItems: "flex-start",
     padding: tokens.spacingHorizontalXL,
     minHeight: "100vh",
+    height: "100vh",
+    overflow: "hidden",
     backgroundColor: "#eef2ff",
     backgroundImage: "linear-gradient(135deg, rgba(37,99,235,0.28) 0%, rgba(124,58,237,0.24) 45%, rgba(236,72,153,0.2) 100%)"
   },
@@ -334,8 +336,7 @@ const useStyles = makeStyles({
     justifyContent: "center",
     padding: tokens.spacingHorizontalXL,
     boxSizing: "border-box",
-    backgroundColor: "#eef2ff",
-    backgroundImage: "linear-gradient(135deg, rgba(37,99,235,0.28) 0%, rgba(124,58,237,0.24) 45%, rgba(236,72,153,0.2) 100%)"
+    backgroundColor: "#f6f7fb"
   },
   startInner: {
     width: "min(1200px, 100%)",
@@ -345,7 +346,8 @@ const useStyles = makeStyles({
   startGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-    gap: tokens.spacingHorizontalM
+    gap: tokens.spacingHorizontalM,
+    alignItems: "stretch"
   },
   startHero: {
     display: "flex",
@@ -353,13 +355,70 @@ const useStyles = makeStyles({
     gap: tokens.spacingVerticalS
   },
   startCard: {
+    position: "relative",
     borderRadius: tokens.borderRadiusLarge,
-    boxShadow: tokens.shadow16,
+    boxShadow: tokens.shadow8,
     border: `1px solid ${tokens.colorNeutralStroke2}`,
-    transition: "box-shadow 120ms ease",
+    padding: tokens.spacingHorizontalL,
+    display: "grid",
+    gridTemplateRows: "auto 1fr auto",
+    gap: tokens.spacingVerticalM,
+    overflow: "hidden",
+    transition: "transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease",
     ":hover": {
-      boxShadow: tokens.shadow16
+      transform: "translateY(-1px)",
+      boxShadow: tokens.shadow16,
+      borderColor: tokens.colorNeutralStroke1
     }
+  },
+  startCardRole: {
+    borderTop: "4px solid #2563eb"
+  },
+  startCardProcess: {
+    borderTop: "4px solid #0f766e"
+  },
+  startCardFacilitator: {
+    borderTop: "4px solid #7c3aed"
+  },
+  startCardHeaderRow: {
+    display: "flex",
+    gap: tokens.spacingHorizontalM,
+    alignItems: "flex-start"
+  },
+  startIcon: {
+    width: "48px",
+    height: "48px",
+    borderRadius: "50%",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: tokens.colorNeutralForeground1,
+    boxShadow: tokens.shadow8,
+    backgroundColor: tokens.colorNeutralBackground1
+  },
+  startIconRole: {
+    color: "#1d4ed8",
+    backgroundColor: "rgba(37,99,235,0.08)"
+  },
+  startIconProcess: {
+    color: "#0f766e",
+    backgroundColor: "rgba(16,185,129,0.08)"
+  },
+  startIconFacilitator: {
+    color: "#7c3aed",
+    backgroundColor: "rgba(124,58,237,0.08)"
+  },
+  startCardFooter: {
+    display: "flex",
+    justifyContent: "flex-end",
+    alignItems: "center"
+  },
+  contentArea: {
+    height: "100vh",
+    overflowY: "auto",
+    paddingRight: tokens.spacingHorizontalM,
+    paddingBottom: tokens.spacingVerticalL,
+    boxSizing: "border-box"
   }
 });
 
@@ -1837,37 +1896,57 @@ const App = () => {
               </Text>
             </div>
             <div className={styles.startGrid}>
-              <Card className={styles.startCard}>
-                <CardHeader
-                  header={<Subtitle2>Role augmentation</Subtitle2>}
-                  description={<Text className={styles.muted}>Map collaborators, tasks, tools, and pain points.</Text>}
-                />
-                <div className={styles.stack}>
-                  <Text size={200}>Stay with the current role and collaboration canvas.</Text>
+              <Card className={`${styles.startCard} ${styles.startCardRole}`}>
+                <div className={styles.startCardHeaderRow}>
+                  <span className={`${styles.startIcon} ${styles.startIconRole}`}>
+                    <PeopleCommunity16Regular />
+                  </span>
+                  <div>
+                    <Subtitle2>Role augmentation</Subtitle2>
+                    <Text size={200} className={styles.muted}>
+                      Map collaborators, tasks, tools, and pain points.
+                    </Text>
+                  </div>
+                </div>
+                <div className={styles.startCardFooter}>
                   <Button appearance="primary" onClick={() => setExperience("role")}>
                     Open role mapper
                   </Button>
                 </div>
               </Card>
-              <Card className={styles.startCard}>
-                <CardHeader
-                  header={<Subtitle2>Process optimization</Subtitle2>}
-                  description={<Text className={styles.muted}>Lay out swimlanes, triggers, decisions, and more.</Text>}
-                />
-                <div className={styles.stack}>
-                  <Text size={200}>Use the process canvas with right-click step placement and drawable connections.</Text>
+
+              <Card className={`${styles.startCard} ${styles.startCardProcess}`}>
+                <div className={styles.startCardHeaderRow}>
+                  <span className={`${styles.startIcon} ${styles.startIconProcess}`}>
+                    <Toolbox16Regular />
+                  </span>
+                  <div>
+                    <Subtitle2>Process optimization</Subtitle2>
+                    <Text size={200} className={styles.muted}>
+                      Lay out swimlanes, triggers, decisions, and automations.
+                    </Text>
+                  </div>
+                </div>
+                <div className={styles.startCardFooter}>
                   <Button appearance="primary" onClick={() => setExperience("process")}>
                     Open process canvas
                   </Button>
                 </div>
               </Card>
-              <Card className={styles.startCard}>
-                <CardHeader
-                  header={<Subtitle2>Facilitator view</Subtitle2>}
-                  description={<Text className={styles.muted}>Review saved roles and processes together.</Text>}
-                />
-                <div className={styles.stack}>
-                  <Text size={200}>Jump straight to the facilitator dashboard.</Text>
+
+              <Card className={`${styles.startCard} ${styles.startCardFacilitator}`}>
+                <div className={styles.startCardHeaderRow}>
+                  <span className={`${styles.startIcon} ${styles.startIconFacilitator}`}>
+                    <Target16Regular />
+                  </span>
+                  <div>
+                    <Subtitle2>Facilitator view</Subtitle2>
+                    <Text size={200} className={styles.muted}>
+                      Review saved roles, pain points, and processes together.
+                    </Text>
+                  </div>
+                </div>
+                <div className={styles.startCardFooter}>
                   <Button
                     appearance="primary"
                     onClick={() => {
@@ -2151,7 +2230,7 @@ const App = () => {
                     </div>
                   )}
                 </div>
-                <div>
+                <div className={styles.contentArea}>
                   <div className={styles.rowTwo}>
                     <Card className={styles.panelCard}>
                       <CardHeader
