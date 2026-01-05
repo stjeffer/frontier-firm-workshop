@@ -45,10 +45,12 @@ import {
   Target16Regular,
   TaskListSquareLtr16Regular,
   DocumentText16Regular,
-  CheckmarkCircle16Regular
+  CheckmarkCircle16Regular,
+  ArrowTrendingSparkle24Regular
 } from "@fluentui/react-icons";
 import { CATALOG_URL } from "./config/catalog";
 import ProcessOptimization from "./ProcessOptimization";
+import ReimaginedExperience from "./ReimaginedExperience";
 
 const appTheme = {
   ...teamsLightTheme,
@@ -375,6 +377,9 @@ const useStyles = makeStyles({
   startCardProcess: {
     borderTop: "4px solid #0f766e"
   },
+  startCardExperience: {
+    borderTop: "4px solid #d97706"
+  },
   startCardFacilitator: {
     borderTop: "4px solid #7c3aed"
   },
@@ -406,6 +411,10 @@ const useStyles = makeStyles({
   startIconProcess: {
     color: "#0f766e",
     backgroundColor: "rgba(16,185,129,0.08)"
+  },
+  startIconExperience: {
+    color: "#d97706",
+    backgroundColor: "rgba(217,119,6,0.08)"
   },
   startIconFacilitator: {
     color: "#7c3aed",
@@ -1294,6 +1303,7 @@ const App = () => {
   const [helperDialog, setHelperDialog] = useState(null);
   const [experience, setExperience] = useState("start");
   const [savedProcesses, setSavedProcesses] = useState([]);
+  const [savedExperiences, setSavedExperiences] = useState([]);
 
   const roleComplete = roleName.trim() && headcount.trim() && description.trim() && businessUnit.trim();
   const toolsComplete = tools.length > 0;
@@ -1937,6 +1947,25 @@ const App = () => {
                 </div>
               </Card>
 
+              <Card className={`${styles.startCard} ${styles.startCardExperience}`}>
+                <div className={styles.startCardHeaderRow}>
+                  <span className={`${styles.startIcon} ${styles.startIconExperience}`}>
+                    <ArrowTrendingSparkle24Regular style={{ width: 32, height: 32 }} />
+                  </span>
+                  <div className={styles.startCardText}>
+                    <Subtitle2>Experience reimagining</Subtitle2>
+                    <Text size={200} className={styles.muted}>
+                      Lay out personas, moments, feelings, friction, and opportunities.
+                    </Text>
+                  </div>
+                </div>
+                <div className={styles.startCardFooter}>
+                  <Button appearance="primary" onClick={() => setExperience("experience")}>
+                    Open experience mapper
+                  </Button>
+                </div>
+              </Card>
+
               <Card className={`${styles.startCard} ${styles.startCardFacilitator}`}>
                 <div className={styles.startCardHeaderRow}>
                   <span className={`${styles.startIcon} ${styles.startIconFacilitator}`}>
@@ -1983,6 +2012,23 @@ const App = () => {
         />
       )}
 
+      {experience === "experience" && (
+        <ReimaginedExperience
+          onBack={() => setExperience("start")}
+          onSaveExperience={(payload) => {
+            setSavedExperiences((prev) => {
+              const idx = prev.findIndex((p) => p.id === payload.id);
+              if (idx >= 0) {
+                const next = [...prev];
+                next[idx] = payload;
+                return next;
+              }
+              return [...prev, payload];
+            });
+          }}
+        />
+      )}
+
       {experience === "role" && (
         isFacilitator ? (
             <div className={styles.facilitatorShell}>
@@ -1990,7 +2036,7 @@ const App = () => {
                 <div style={{ display: "flex", alignItems: "center", gap: tokens.spacingHorizontalS }}>
                   <Text weight="semibold">Facilitator dashboard</Text>
                   <Text size={200} className={styles.muted}>
-                    Roles on the left, processes on the right.
+                    Roles on the left, processes and experiences on the right.
                   </Text>
                 </div>
                 <div style={{ display: "flex", gap: tokens.spacingHorizontalS }}>
@@ -2081,7 +2127,7 @@ const App = () => {
                     </div>
                   </Card>
                 </div>
-                <div>
+                <div className={styles.stack}>
                   <Card className={styles.panelCard}>
                     <CardHeader
                       header={<Subtitle2>Process analysis</Subtitle2>}
@@ -2111,6 +2157,51 @@ const App = () => {
                           </div>
                         </Card>
                       ))}
+                    </div>
+                  </Card>
+
+                  <Card className={styles.panelCard}>
+                    <CardHeader
+                      header={<Subtitle2>Experience analysis</Subtitle2>}
+                      description={<Text className={styles.muted}>Saved reimagined experiences.</Text>}
+                    />
+                    <div className={styles.stack}>
+                      {savedExperiences.length === 0 && <Text className={styles.muted}>No experiences saved yet.</Text>}
+                      {savedExperiences.map((exp) => {
+                        const counts = (exp.cards || []).reduce((acc, card) => {
+                          acc[card.type] = (acc[card.type] || 0) + (Number(card.quantity) || 0);
+                          return acc;
+                        }, {});
+                        return (
+                          <Card key={exp.id} className={styles.collaboratorBlock}>
+                            <div className={styles.collaboratorHeader}>
+                              <Text weight="semibold">{exp.experienceInfo?.name || "Experience"}</Text>
+                              <Text size={200} className={styles.muted}>
+                                {exp.experienceInfo?.businessUnit || "Unit not set"}
+                              </Text>
+                            </div>
+                            <Text size={200} className={styles.muted}>
+                              {exp.experienceInfo?.scenario || "No scenario noted."}
+                            </Text>
+                            <Text size={200}>{exp.experienceInfo?.description || "No description."}</Text>
+                            <div style={{ display: "flex", gap: tokens.spacingHorizontalXS, flexWrap: "wrap" }}>
+                              {(exp.cards || []).slice(0, 6).map((c) => (
+                                <Tag key={c.id} shape="rounded" appearance="outline">
+                                  {c.label || c.type}: {c.quantity}
+                                </Tag>
+                              ))}
+                              {(exp.cards || []).length > 6 && <Tag shape="rounded">+{(exp.cards || []).length - 6} more</Tag>}
+                            </div>
+                            <div style={{ display: "flex", gap: tokens.spacingHorizontalXS, flexWrap: "wrap" }}>
+                              {Object.entries(counts).map(([type, count]) => (
+                                <Tag key={`${exp.id}-${type}`} shape="rounded" appearance="brand">
+                                  {type} • {count}
+                                </Tag>
+                              ))}
+                            </div>
+                          </Card>
+                        );
+                      })}
                     </div>
                   </Card>
                 </div>
@@ -2228,6 +2319,16 @@ const App = () => {
                       {savedProcesses.map((p) => (
                         <Button key={p.id} appearance="secondary" size="small" onClick={() => setExperience("process")}>
                           {p.processInfo?.name || "Process"}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                  {savedExperiences.length > 0 && (
+                    <div className={styles.navGroup}>
+                      <div className={styles.navLabel}>Saved experiences</div>
+                      {savedExperiences.map((e) => (
+                        <Button key={e.id} appearance="secondary" size="small" onClick={() => setExperience("experience")}>
+                          {e.experienceInfo?.name || "Experience"}
                         </Button>
                       ))}
                     </div>
