@@ -205,6 +205,7 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
   const [linkingFrom, setLinkingFrom] = useState(null);
   const [dragging, setDragging] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
+  const [selectedNodeId, setSelectedNodeId] = useState(null);
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -261,7 +262,13 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
     onSaveExperience?.(payload);
   };
 
-  const removeNode = (id) => setNodes((prev) => prev.filter((n) => n.id !== id));
+  const removeNode = (id) => {
+    setNodes((prev) => prev.filter((n) => n.id !== id));
+    setCards((prev) => prev.filter((c) => c.id !== id));
+    setConnections((prev) => prev.filter((c) => c.from !== id && c.to !== id));
+    if (selectedNodeId === id) setSelectedNodeId(null);
+    if (linkingFrom === id) setLinkingFrom(null);
+  };
 
   const addNodeAt = (type, x, y) => {
     const def = typeMap[type] || artifactTypes[0];
@@ -290,6 +297,18 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
     } else {
       setLinkingFrom(id);
     }
+  };
+
+  const selectedNode = useMemo(() => nodes.find((n) => n.id === selectedNodeId), [nodes, selectedNodeId]);
+
+  const updateNode = (id, updater) => {
+    setNodes((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, ...(typeof updater === "function" ? updater(n) : updater) } : n))
+    );
+  };
+
+  const updateCardFromNode = (id, next) => {
+    setCards((prev) => prev.map((c) => (c.id === id ? { ...c, ...next } : c)));
   };
 
   const handlePointerDown = (node) => (e) => {
@@ -464,11 +483,11 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
       <Card className={styles.canvasCard}>
         <CardHeader
           header={<Subtitle2>Experience canvas</Subtitle2>}
-          description={<Text className="muted">Drag elements, link them, and right-click to add new ones.</Text>}
+          description={<Text className="muted">Drag elements, right-click to add, and use Link to connect steps.</Text>}
         />
         <div className={styles.canvasToolbar}>
           <Text size={200} className={styles.linkHint}>
-            Tip: Click a node, then another to draw a link. Right-click anywhere to place a new element.
+            Tip: Select a node, press Link, then choose a target. Right-click anywhere to place a new element.
           </Text>
           <div style={{ display: "flex", gap: tokens.spacingHorizontalS }}>
             <Button appearance="secondary" size="small" onClick={() => { setNodes([]); setConnections([]); setLinkingFrom(null); }}>
@@ -502,9 +521,15 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
               <div
                 key={node.id}
                 className={styles.node}
-                style={{ left: node.x, top: node.y, borderColor: node.color, cursor: "grab" }}
+                style={{
+                  left: node.x,
+                  top: node.y,
+                  borderColor: linkingFrom === node.id ? tokens.colorBrandStroke1 : node.color,
+                  boxShadow: selectedNodeId === node.id ? tokens.shadow16 : tokens.shadow8,
+                  cursor: "grab"
+                }}
                 onPointerDown={handlePointerDown(node)}
-                onClick={() => handleStartLink(node.id)}
+                onClick={() => setSelectedNodeId(node.id)}
               >
                 <div className={styles.nodeHeader}>
                   <span className={styles.artifactIcon} style={{ backgroundColor: node.bg || tokens.colorNeutralBackground4, color: node.color }}>
@@ -518,10 +543,28 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
                   </div>
                 </div>
                 <Text size={200}>{node.detail}</Text>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <Text size={200} className={styles.linkHint}>
-                    {linkingFrom === node.id ? "Select a target…" : "Click to link"}
-                  </Text>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: tokens.spacingHorizontalXS }}>
+                  <Button
+                    size="small"
+                    appearance={linkingFrom === node.id ? "primary" : "secondary"}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStartLink(node.id);
+                      setSelectedNodeId(node.id);
+                    }}
+                  >
+                    {linkingFrom === node.id ? "Select target" : "Link"}
+                  </Button>
+                  <Button
+                    size="small"
+                    appearance="secondary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedNodeId(node.id);
+                    }}
+                  >
+                    Edit
+                  </Button>
                   <Button
                     appearance="subtle"
                     icon={<Delete16Regular />}
@@ -529,7 +572,6 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
                     onClick={(e) => {
                       e.stopPropagation();
                       removeNode(node.id);
-                      setConnections((prev) => prev.filter((c) => c.from !== node.id && c.to !== node.id));
                     }}
                   />
                 </div>
@@ -552,6 +594,73 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
           </Button>
         </div>
       )}
+
+      <Card>
+        <CardHeader
+          header={<Subtitle2>Element details</Subtitle2>}
+          description={<Text className="muted">Select a card on the canvas to edit its info.</Text>}
+        />
+        {selectedNode ? (
+          <div className={styles.stack}>
+            <Field label="Type">
+              <Combobox
+                selectedOptions={[selectedNode.type]}
+                onOptionSelect={(_, data) => {
+                  const nextType = data.optionValue || selectedNode.type;
+                  const def = typeMap[nextType] || artifactTypes[0];
+                  updateNode(selectedNode.id, {
+                    type: nextType,
+                    label: def.label,
+                    color: def.color,
+                    bg: def.bg
+                  });
+                  updateCardFromNode(selectedNode.id, { type: nextType, label: def.label });
+                }}
+              >
+                {artifactTypes.map((t) => (
+                  <Option key={t.key} value={t.key}>
+                    {t.label}
+                  </Option>
+                ))}
+              </Combobox>
+            </Field>
+            <Field label="Detail">
+              <Textarea
+                value={selectedNode.detail || ""}
+                onChange={(_, d) => {
+                  updateNode(selectedNode.id, { detail: d.value });
+                  updateCardFromNode(selectedNode.id, { detail: d.value });
+                }}
+                rows={3}
+              />
+            </Field>
+            <Field label="Quantity">
+              <Input
+                type="number"
+                min={1}
+                value={selectedNode.quantity || 1}
+                onChange={(_, d) => {
+                  const qty = Math.max(1, Number(d.value) || 1);
+                  updateNode(selectedNode.id, { quantity: qty });
+                  updateCardFromNode(selectedNode.id, { quantity: qty });
+                }}
+              />
+            </Field>
+            <div style={{ display: "flex", gap: tokens.spacingHorizontalS }}>
+              <Button appearance="secondary" onClick={() => setSelectedNodeId(null)}>
+                Done
+              </Button>
+              <Button appearance="subtle" icon={<Delete16Regular />} onClick={() => removeNode(selectedNode.id)}>
+                Delete element
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ padding: tokens.spacingHorizontalM }}>
+            <Text className="muted">No element selected.</Text>
+          </div>
+        )}
+      </Card>
     </div>
   );
 };
