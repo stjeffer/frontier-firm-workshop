@@ -261,7 +261,6 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
     onSaveExperience?.(payload);
   };
 
-  const removeCard = (id) => setCards((prev) => prev.filter((c) => c.id !== id));
   const removeNode = (id) => setNodes((prev) => prev.filter((n) => n.id !== id));
 
   const addNodeAt = (type, x, y) => {
@@ -461,52 +460,6 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
           </div>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader
-          header={<Subtitle2>Experience map</Subtitle2>}
-          description={<Text className="muted">Add cards to visualize the full experience.</Text>}
-        />
-        {cards.length === 0 ? (
-          <div style={{ padding: tokens.spacingHorizontalM }}>
-            <Text className="muted">No cards yet. Add at least one element to build the view.</Text>
-          </div>
-        ) : (
-          <div className={styles.cardGrid}>
-            {cards.map((card) => {
-              const def = typeMap[card.type] || artifactTypes[0];
-              const Icon = def.icon;
-              return (
-                <div key={card.id} className={styles.artifactCard}>
-                  <div className={styles.artifactHeader}>
-                    <span className={styles.artifactIcon} style={{ backgroundColor: def.bg, color: def.color }}>
-                      <Icon />
-                    </span>
-                    <div>
-                      <Text weight="semibold">{def.label}</Text>
-                      <Text size={200} className="muted">
-                        {def.prompt}
-                      </Text>
-                    </div>
-                  </div>
-                  <Text>{card.detail}</Text>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <Text size={200} className="muted">
-                      Qty {card.quantity}
-                    </Text>
-                    <Button
-                      appearance="subtle"
-                      icon={<Delete16Regular />}
-                      aria-label="Remove card"
-                      onClick={() => removeCard(card.id)}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </Card>
 
       <Card className={styles.canvasCard}>
         <CardHeader
