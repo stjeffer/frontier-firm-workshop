@@ -2184,6 +2184,7 @@ const App = () => {
                               {exp.experienceInfo?.scenario || "No scenario noted."}
                             </Text>
                             <Text size={200}>{exp.experienceInfo?.description || "No description."}</Text>
+                            <Text size={200}>Nodes: {exp.nodes?.length || 0} • Links: {exp.connections?.length || 0}</Text>
                             <div style={{ display: "flex", gap: tokens.spacingHorizontalXS, flexWrap: "wrap" }}>
                               {(exp.cards || []).slice(0, 6).map((c) => (
                                 <Tag key={c.id} shape="rounded" appearance="outline">

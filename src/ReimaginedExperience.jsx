@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
   Card,
@@ -79,6 +79,64 @@ const useStyles = makeStyles({
     gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
     gap: tokens.spacingHorizontalM
   },
+  canvasCard: {
+    position: "relative",
+    minHeight: "520px",
+    overflow: "hidden",
+    boxShadow: tokens.shadow16
+  },
+  canvas: {
+    position: "relative",
+    height: "620px",
+    width: "100%",
+    borderRadius: tokens.borderRadiusLarge,
+    backgroundColor: tokens.colorNeutralBackground1,
+    backgroundImage:
+      "repeating-linear-gradient(0deg, rgba(37,99,235,0.06) 0, rgba(37,99,235,0.06) 1px, transparent 1px, transparent 24px), repeating-linear-gradient(90deg, rgba(37,99,235,0.06) 0, rgba(37,99,235,0.06) 1px, transparent 1px, transparent 24px)",
+    cursor: "default",
+    overflow: "hidden"
+  },
+  node: {
+    position: "absolute",
+    transform: "translate(-50%, -50%)",
+    display: "flex",
+    flexDirection: "column",
+    gap: tokens.spacingVerticalXXS,
+    padding: tokens.spacingHorizontalS,
+    borderRadius: tokens.borderRadiusMedium,
+    boxShadow: tokens.shadow8,
+    backgroundColor: tokens.colorNeutralBackground1,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    width: "170px",
+    minHeight: "120px",
+    userSelect: "none"
+  },
+  nodeHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalS
+  },
+  linkHint: {
+    fontSize: "12px",
+    color: tokens.colorNeutralForeground3
+  },
+  canvasToolbar: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalS}`
+  },
+  contextMenu: {
+    position: "fixed",
+    padding: tokens.spacingHorizontalS,
+    backgroundColor: tokens.colorNeutralBackground1,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    borderRadius: tokens.borderRadiusMedium,
+    boxShadow: tokens.shadow16,
+    zIndex: 20,
+    display: "grid",
+    gap: tokens.spacingVerticalXXS
+  },
   artifactCard: {
     borderRadius: tokens.borderRadiusLarge,
     backgroundColor: tokens.colorNeutralBackground1,
@@ -142,6 +200,12 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
   const [experienceInfo, setExperienceInfo] = useState(emptyInfo);
   const [cards, setCards] = useState([]);
   const [newCard, setNewCard] = useState({ type: "persona", detail: "", quantity: 1 });
+  const [nodes, setNodes] = useState([]);
+  const [connections, setConnections] = useState([]);
+  const [linkingFrom, setLinkingFrom] = useState(null);
+  const [dragging, setDragging] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null);
+  const canvasRef = useRef(null);
 
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -150,6 +214,8 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
       const parsed = JSON.parse(raw);
       setExperienceInfo(parsed.experienceInfo || emptyInfo);
       setCards(parsed.cards || []);
+      setNodes(parsed.nodes || []);
+      setConnections(parsed.connections || []);
     } catch (err) {
       console.warn("Failed to load experience session", err);
     }
@@ -168,6 +234,16 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
     const id = `${newCard.type}-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
     const quantity = Math.max(1, Number(newCard.quantity) || 1);
     setCards((prev) => [...prev, { ...newCard, detail, id, label: def.label, quantity }]);
+    setNodes((prev) => {
+      const row = Math.floor(prev.length / 4);
+      const col = prev.length % 4;
+      const baseX = 180 + col * 220;
+      const baseY = 140 + row * 180;
+      return [
+        ...prev,
+        { id, type: newCard.type, label: def.label, detail, quantity, x: baseX, y: baseY, color: def.color, bg: def.bg }
+      ];
+    });
     setNewCard((prev) => ({ ...prev, detail: "" }));
   };
 
@@ -176,7 +252,9 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
     const payload = {
       id,
       experienceInfo: { ...experienceInfo, id },
-      cards
+      cards,
+      nodes,
+      connections
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     setExperienceInfo((prev) => ({ ...prev, id }));
@@ -184,6 +262,62 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
   };
 
   const removeCard = (id) => setCards((prev) => prev.filter((c) => c.id !== id));
+  const removeNode = (id) => setNodes((prev) => prev.filter((n) => n.id !== id));
+
+  const addNodeAt = (type, x, y) => {
+    const def = typeMap[type] || artifactTypes[0];
+    const id = `${type}-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
+    setNodes((prev) => [...prev, { id, type, label: def.label, detail: def.prompt, quantity: 1, x, y, color: def.color, bg: def.bg }]);
+    setContextMenu(null);
+  };
+
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setContextMenu({ pageX: e.clientX, pageY: e.clientY, x, y });
+  };
+
+  const handleStartLink = (id) => {
+    if (linkingFrom && linkingFrom !== id) {
+      setConnections((prev) => {
+        const exists = prev.some((c) => c.from === linkingFrom && c.to === id);
+        if (exists) return prev;
+        return [...prev, { id: `${linkingFrom}-${id}-${Date.now()}`, from: linkingFrom, to: id }];
+      });
+      setLinkingFrom(null);
+    } else {
+      setLinkingFrom(id);
+    }
+  };
+
+  const handlePointerDown = (node) => (e) => {
+    e.preventDefault();
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const offsetX = (e.clientX - rect.left) - node.x;
+    const offsetY = (e.clientY - rect.top) - node.y;
+    setDragging({ id: node.id, offsetX, offsetY });
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+
+  const handlePointerMove = (e) => {
+    if (!dragging) return;
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = e.clientX - rect.left - dragging.offsetX;
+    const y = e.clientY - rect.top - dragging.offsetY;
+    setNodes((prev) => prev.map((n) => (n.id === dragging.id ? { ...n, x, y } : n)));
+  };
+
+  const handlePointerUp = (e) => {
+    if (dragging) {
+      e.currentTarget.releasePointerCapture?.(e.pointerId);
+      setDragging(null);
+    }
+  };
 
   return (
     <div className={styles.shell}>
@@ -373,6 +507,98 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
           </div>
         )}
       </Card>
+
+      <Card className={styles.canvasCard}>
+        <CardHeader
+          header={<Subtitle2>Experience canvas</Subtitle2>}
+          description={<Text className="muted">Drag elements, link them, and right-click to add new ones.</Text>}
+        />
+        <div className={styles.canvasToolbar}>
+          <Text size={200} className={styles.linkHint}>
+            Tip: Click a node, then another to draw a link. Right-click anywhere to place a new element.
+          </Text>
+          <div style={{ display: "flex", gap: tokens.spacingHorizontalS }}>
+            <Button appearance="secondary" size="small" onClick={() => { setNodes([]); setConnections([]); setLinkingFrom(null); }}>
+              Clear canvas
+            </Button>
+          </div>
+        </div>
+        <div
+          ref={canvasRef}
+          className={styles.canvas}
+          onContextMenu={handleContextMenu}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
+        >
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+            {connections.map((c) => {
+              const from = nodes.find((n) => n.id === c.from);
+              const to = nodes.find((n) => n.id === c.to);
+              if (!from || !to) return null;
+              return (
+                <g key={c.id} stroke={tokens.colorNeutralStroke2} strokeWidth="2">
+                  <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} strokeDasharray="4 3" />
+                </g>
+              );
+            })}
+          </svg>
+          {nodes.map((node) => {
+            const Icon = typeMap[node.type]?.icon || Person24Regular;
+            return (
+              <div
+                key={node.id}
+                className={styles.node}
+                style={{ left: node.x, top: node.y, borderColor: node.color, cursor: "grab" }}
+                onPointerDown={handlePointerDown(node)}
+                onClick={() => handleStartLink(node.id)}
+              >
+                <div className={styles.nodeHeader}>
+                  <span className={styles.artifactIcon} style={{ backgroundColor: node.bg || tokens.colorNeutralBackground4, color: node.color }}>
+                    <Icon />
+                  </span>
+                  <div>
+                    <Text weight="semibold">{node.label}</Text>
+                    <Text size={200} className="muted">
+                      Qty {node.quantity || 1}
+                    </Text>
+                  </div>
+                </div>
+                <Text size={200}>{node.detail}</Text>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <Text size={200} className={styles.linkHint}>
+                    {linkingFrom === node.id ? "Select a target…" : "Click to link"}
+                  </Text>
+                  <Button
+                    appearance="subtle"
+                    icon={<Delete16Regular />}
+                    aria-label="Remove node"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeNode(node.id);
+                      setConnections((prev) => prev.filter((c) => c.from !== node.id && c.to !== node.id));
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      {contextMenu && (
+        <div className={styles.contextMenu} style={{ top: contextMenu.pageY, left: contextMenu.pageX }}>
+          <Text weight="semibold">Add element here</Text>
+          {artifactTypes.map((t) => (
+            <Button key={t.key} size="small" onClick={() => addNodeAt(t.key, contextMenu.x, contextMenu.y)}>
+              {t.label}
+            </Button>
+          ))}
+          <Button size="small" appearance="subtle" onClick={() => setContextMenu(null)}>
+            Cancel
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
