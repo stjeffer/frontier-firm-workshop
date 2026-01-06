@@ -273,7 +273,10 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
   const addNodeAt = (type, x, y) => {
     const def = typeMap[type] || artifactTypes[0];
     const id = `${type}-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
-    setNodes((prev) => [...prev, { id, type, label: def.label, detail: def.prompt, quantity: 1, x, y, color: def.color, bg: def.bg }]);
+    const base = { id, type, label: def.label, detail: def.prompt, quantity: 1 };
+    setNodes((prev) => [...prev, { ...base, x, y, color: def.color, bg: def.bg }]);
+    setCards((prev) => [...prev, { ...base, detail: def.prompt, quantity: 1 }]);
+    setSelectedNodeId(id);
     setContextMenu(null);
   };
 
@@ -312,6 +315,8 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
   };
 
   const handlePointerDown = (node) => (e) => {
+    const tag = e.target.tagName;
+    if (["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(tag)) return;
     e.preventDefault();
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -543,6 +548,47 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
                   </div>
                 </div>
                 <Text size={200}>{node.detail}</Text>
+                {selectedNodeId === node.id && (
+                  <div className={styles.stack} style={{ gap: tokens.spacingVerticalXXS }}>
+                    <Combobox
+                      selectedOptions={[node.type]}
+                      onOptionSelect={(_, data) => {
+                        const nextType = data.optionValue || node.type;
+                        const def = typeMap[nextType] || artifactTypes[0];
+                        updateNode(node.id, { type: nextType, label: def.label, color: def.color, bg: def.bg });
+                        updateCardFromNode(node.id, { type: nextType, label: def.label });
+                      }}
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
+                      {artifactTypes.map((t) => (
+                        <Option key={t.key} value={t.key}>
+                          {t.label}
+                        </Option>
+                      ))}
+                    </Combobox>
+                    <Textarea
+                      value={node.detail}
+                      onChange={(_, d) => {
+                        updateNode(node.id, { detail: d.value });
+                        updateCardFromNode(node.id, { detail: d.value });
+                      }}
+                      placeholder="Describe this element"
+                      rows={2}
+                      onPointerDown={(e) => e.stopPropagation()}
+                    />
+                    <Input
+                      type="number"
+                      min={1}
+                      value={node.quantity || 1}
+                      onChange={(_, d) => {
+                        const qty = Math.max(1, Number(d.value) || 1);
+                        updateNode(node.id, { quantity: qty });
+                        updateCardFromNode(node.id, { quantity: qty });
+                      }}
+                      onPointerDown={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                )}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: tokens.spacingHorizontalXS }}>
                   <Button
                     size="small"
@@ -595,72 +641,6 @@ const ReimaginedExperience = ({ onBack, onSaveExperience }) => {
         </div>
       )}
 
-      <Card>
-        <CardHeader
-          header={<Subtitle2>Element details</Subtitle2>}
-          description={<Text className="muted">Select a card on the canvas to edit its info.</Text>}
-        />
-        {selectedNode ? (
-          <div className={styles.stack}>
-            <Field label="Type">
-              <Combobox
-                selectedOptions={[selectedNode.type]}
-                onOptionSelect={(_, data) => {
-                  const nextType = data.optionValue || selectedNode.type;
-                  const def = typeMap[nextType] || artifactTypes[0];
-                  updateNode(selectedNode.id, {
-                    type: nextType,
-                    label: def.label,
-                    color: def.color,
-                    bg: def.bg
-                  });
-                  updateCardFromNode(selectedNode.id, { type: nextType, label: def.label });
-                }}
-              >
-                {artifactTypes.map((t) => (
-                  <Option key={t.key} value={t.key}>
-                    {t.label}
-                  </Option>
-                ))}
-              </Combobox>
-            </Field>
-            <Field label="Detail">
-              <Textarea
-                value={selectedNode.detail || ""}
-                onChange={(_, d) => {
-                  updateNode(selectedNode.id, { detail: d.value });
-                  updateCardFromNode(selectedNode.id, { detail: d.value });
-                }}
-                rows={3}
-              />
-            </Field>
-            <Field label="Quantity">
-              <Input
-                type="number"
-                min={1}
-                value={selectedNode.quantity || 1}
-                onChange={(_, d) => {
-                  const qty = Math.max(1, Number(d.value) || 1);
-                  updateNode(selectedNode.id, { quantity: qty });
-                  updateCardFromNode(selectedNode.id, { quantity: qty });
-                }}
-              />
-            </Field>
-            <div style={{ display: "flex", gap: tokens.spacingHorizontalS }}>
-              <Button appearance="secondary" onClick={() => setSelectedNodeId(null)}>
-                Done
-              </Button>
-              <Button appearance="subtle" icon={<Delete16Regular />} onClick={() => removeNode(selectedNode.id)}>
-                Delete element
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div style={{ padding: tokens.spacingHorizontalM }}>
-            <Text className="muted">No element selected.</Text>
-          </div>
-        )}
-      </Card>
     </div>
   );
 };
